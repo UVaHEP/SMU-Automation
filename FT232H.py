@@ -64,8 +64,11 @@ class FT232H:
         self.setCSPins = self.__pass__
         self.Activechannel = self.__pass__
         self.ClearChannel = self.__pass__
-        self.EnableChannel = self.__pass__ 
+        self.EnableChannel = self.__pass__
 
+    def Persist(self,flag=persist):
+        self.disableOnExit = not persist
+        
     def enableMode(self, mode):
         if (self.mode == mode):
             return
