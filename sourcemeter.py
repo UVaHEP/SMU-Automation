@@ -133,16 +133,32 @@ class Sourcemeter:
 
 
     #################
-    # Features to add
+    # Sourcemeter Controls
     #################
 
-    def Beep(self):
-        #Bring the noise
-        pass
+    def Beep(self, notes):
+        pass 
     def Arm(self):
         pass
     def DisArm(self):
         pass
+    def EnableOutput(self):
+        pass
+    def DisableOutput(self):
+        pass
+    def Autorange(self, state):
+        pass
+    def OutputFn(self, func):
+        pass
+    def Reset(self):
+        pass
+    def VoltageLimit(self, voltage):
+        pass
+    def CurrentLimit(self, current):
+        pass
+    def Model(self):
+        pass
+    
     # set static voltage here
     def SetVoltage(self,v):
         pass
@@ -153,6 +169,7 @@ class Sourcemeter:
         # read voltage here
         pass
 
+    
         
 
 class Keithley2611(Sourcemeter):
@@ -165,17 +182,79 @@ class Keithley2611(Sourcemeter):
     def __del__(self):
         self.handle.close()
         print 'Closing TCP connection'
+    def DisableOutput(self):
+        self.handle.write('smua.source.output = smua.OFF')
+    def EnableOutput(self):
+        self.handle.write('smua.source.output = smua.ON')
 
-    def Connect(self):
+    def Reset(self):
         self.handle.write('smua.reset()')
 
-        self.handle.write('smua.source.output = smua.OUTPUT_OFF')
-        self.handle.write('smua.source.func = smua.OUTPUT_DCVOLTS')
-        self.handle.write('smua.source.limitv = -80')
-        self.handle.write('smua.source.limiti = '+str(self.limit))
-        self.handle.write('smua.measure.autorangei = smua.AUTORANGE_ON')
-        self.handle.write('smua.source.output = smua.OUTPUT_ON')
+    def OutputFn(self, func):
+        cmd = 'smua.source.func = {0}'
+        if func == 'voltage':
+            cmd = cmd.format('smua.OUTPUT_DCVOLTS')
+        elif func == 'current':
+            cmd = cmd.format('smua.OUTPUT_DCAMPS')
+        else:
+            print 'bad output function'
+            return
+        self.handle.write(cmd)
+
+    def Autorange(self, state):
+        #for now only handle current measuring, will change
+        #to handle voltage autoranging as well
+        cmd = 'smua.measure.autorangei = {0}'
+        if state:
+            cmd = cmd.format('smua.AUTORANGE_ON')
+        else:
+            cmd = cmd.format('smua.AUTORANGE_OFF')
+        self.handle.write(cmd)
+        
+    def CurrentLimit(self, current):
+        cmd = 'smua.source.ilimit.level = {0}'
+        try:
+            i = float(current)
+            cmd = cmd.format(i)
+            self.handle.write(cmd)
+        except ValueError as e:
+            print 'bad current in voltageLimit'
+            
+    def VoltageLimit(self, voltage):
+        cmd = 'smua.source.limitv = {0}'
+        try:
+            volt = float(voltage)
+            cmd = cmd.format(volt)
+            self.handle.write(cmd)
+        except ValueError as e:
+            print 'bad voltage in voltageLimit'
+
+    def Model(self):
+        identity = self.handle.ask("*IDN?")
+        return identity
+
+    def SetVoltage(self, v):
+        cmd = 'smua.source.levelv = {0}'
+        try:
+            voltage = float(v)
+            cmd = cmd.format(voltage)
+            self.handle.write(cmd)
+        except ValueError as e:
+            print 'bad voltage in Set Voltage'
+
+
+    
+    def Connect(self):
+        
+
+        self.DisableOutput()
+        self.OutputFn('voltage')
+        self.VoltageLimit(-80)
+        self.CurrentLimit(self.limit)
+        self.Autorange(1)
+        self.EnableOutput()
         self.handle.timeout = 2000000
+
 
     def MeasureIV(self):
         self.handle.write('mylist = {}')
@@ -203,9 +282,93 @@ class Keithley2450(Sourcemeter):
     def __del__(self):
         self.handle.close()
         print "Closing TCP connection"
+    def Beep(self, notes):
+        #Beep takes a list of tuples where each tuple consists of
+        #two elements (duration in seconds, frequency in hertz)
+        #so pass in something like [(0.5, 200), (0.25, 450), ... ]
+        cmd = 'beeper.beep({0}, {1})'
+        try: 
+            for note in notes:
+                duration, freq = note
+                beepcmd = cmd.format(duration, freq)
+                self.handle.write(beepcmd)
+        except Exception as e:
+            print 'Beeper failed to work.'
+
+
+    def DisableOutput(self):
+        self.handle.write('smu.source.output = smu.OFF')
+    def EnableOutput(self):
+        self.handle.write('smu.source.output = smu.ON')
+
+    def Reset(self):
+        self.handle.write('smu.reset()')
+
+    def OutputFn(self, func):
+        cmd = 'smu.source.func = {0}'
+        if func == 'voltage':
+            cmd = cmd.format('smu.FUNC_DC_VOLTAGE')
+        elif func == 'current':
+            cmd = cmd.format('smu.FUNC_DC_CURRENT')
+        else:
+            print 'bad output function'
+            return
+        self.handle.write(cmd)
+
+    def Autorange(self, state):
+        cmd = 'smu.measure.autorange = {0}'
+        if state:
+            cmd = cmd.format('smu.ON')
+        else:
+            cmd = cmd.format('smu.OFF')
+        self.handle.write(cmd)
         
-    def Connect(self):
+    def CurrentLimit(self, current):
+        cmd = 'smu.source.ilimit.level = {0}'
+        try:
+            i = float(current)
+            cmd = cmd.format(i)
+            self.handle.write(cmd)
+        except ValueError as e:
+            print 'bad current in CurrentLimit'
+            
+    def VoltageLimit(self, voltage):
+        cmd = 'smu.source.range = {0}'
+        try:
+            volt = float(voltage)
+            cmd = cmd.format(volt)
+            self.handle.write(cmd)
+        except ValueError as e:
+            print 'bad voltage in VoltageLimit'
+
+    def Model(self):
         identity = self.handle.ask("*IDN?")
+        return identity
+
+    def SetVoltage(self, v):
+        cmd = 'smu.source.level = {0}'
+        try:
+            voltage = float(v)
+            cmd = cmd.format(voltage)
+            self.handle.write(cmd)
+        except ValueError as e:
+            print 'bad voltage in Set Voltage'
+
+    def ReadVIPoint(self,v=None):
+        if v != None:
+            self.SetVoltage(v)
+        #set to 1 measurement
+        self.handle.write('smu.measure.count = 1')
+        self.EnableOutput()
+        self.handle.write('print(smu.measure.read())')
+        measure = self.handle.read()
+        print 'i-v measure: {0}'.format(measure)
+        self.DisableOutput()
+        return measure
+    
+    def Connect(self):
+        
+        identity = self.model()
         if (identity.find('MODEL 2450') != -1):
             print 'Model: '+identity
         else:
@@ -214,19 +377,16 @@ class Keithley2450(Sourcemeter):
             return
             
 
-        self.handle.write('smu.reset()')
+        self.Reset()
         #Set output limits and range 
-        self.handle.write('smu.source.output = smu.OFF')
-        self.handle.write('smu.source.func = smu.FUNC_DC_VOLTAGE')
-        
-        self.handle.write('smu.source.autorange = smu.ON')
-       
-        self.handle.write('smu.measure.autorange = smu.ON')
-      #  self.handle.write('smu.source.range = -80')
-        self.handle.write('smu.source.output = smu.ON')
-        self.handle.write('smu.source.output = smu.OFF')
-        print 'limit:'+str(self.limit)
-        self.handle.write('smu.source.ilimit.level = {0}'.format(self.limit))
+        self.DisableOutput()
+        self.OutputFn('voltage')
+        self.VoltageLimit(-80)
+        self.CurrentLimit(self.limit)
+        self.Autorange(1)
+        self.EnableOutput()
+        self.DisableOutput()
+
 
     def MeasureIV(self):
         self.handle.write('smu.source.configlist.create("VoltListSweep")')
