@@ -65,18 +65,15 @@ class Sourcemeter:
 
         else:
             volt = 0.0
-            while round(volt,4)>=(-80.0):
+            while round(volt,4)>=(-60.0):
                 self.volts.append(str(round(volt,4)))
                 if round(volt,4) >(-40.0):
-                    volt += -1.0
-                elif round(volt,4) >(-50.0):
                     volt += -0.5
-                elif round(volt,4) >(-60.0):
-                    volt += -0.25
-                elif round(volt,4) >(-75.0):
-                    volt += -0.05
-                else:
+                elif round(volt,4) >(-50.0):
                     volt += -0.1
+                else:
+                    volt += -0.05
+
                     
     # Get list of voltages from a text file
     def ReadVfile(self, file):
@@ -108,17 +105,32 @@ class Sourcemeter:
     # dump the IV curve data to the screen and optionally a file
     def WriteData(self, output=""):
         if output != "":
+            print 'Writing to {0}.'.format(output)
             outputFile = open(output,'w+')
             outputFile.write('Repeat,VAR2,Point,Voltage,Current,Time\n')
         print len(self.current)
         print 'voltage:'
         print len(self.volts)
         for i in range(len(self.current)):
-            outputString = "{0},{1},{2},{3},{4},{5}\n".format(1,1,1,str(self.volts[i]),str(self.current[i]).lstrip('+'),1)
-            print "%3d %6.2f %6.2e" % (i,self.volts[i],float(self.current[i].lstrip('+')))
-            if output != "": outputFile.write(outputString)
+            try:
+                current = str(self.current[i]).lstrip('+')
+                outputStr = '1,1,1,{0},{1},1\n'.format(self.volts[i], current)
+                if outputFile:
+                    outputFile.write(outputStr)
+                formattedStr = '%3d %6.2f %6.2e' % (i, float(self.volts[i]), float(current))
+                print formattedStr
+            except Exception as e:
+                print 'something went wrong when writing: {0}.'.format(e)
 
-        if output != "": outputFile.close()
+        if output != "":
+             outputFile.close()
+         
+                #print "%3d %6.2f %6.2e" % (i,self.volts[i],float(self.current[i].lstrip('+')))          
+#            outputString = "{0},{1},{2},{3},{4},{5}\n".format(1,1,1,str(self.volts[i]),str(self.current[i]).lstrip('+'),1)
+#            print "%3d %6.2f %6.2e" % (i,self.volts[i],float(self.current[i].lstrip('+')))
+ #           if output != "": outputFile.write(outputString)
+
+
 
     #################
     # Features to add

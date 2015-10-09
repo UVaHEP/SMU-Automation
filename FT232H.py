@@ -14,8 +14,9 @@ defaultMap = {
 
 
 class FT232H:
-    def __init__(self, mode, pinMap=defaultMap, dacAddress='\xC0'):
+    def __init__(self, mode, disableOnExit=True, pinMap=defaultMap,  dacAddress='\xC0'):
 
+        self.disableOnExit = disableOnExit
         self.address = dacAddress
         self.DACupdate = '\x40'
         self.ledActive = False
@@ -44,13 +45,15 @@ class FT232H:
         print 'pass' 
     
     def __del__(self):
-        if (self.ledActive):
-            print 'Turning off LEDs...good night!'
-            self.SetLight(0)
-        if (self.relayActive):
-            print 'Disabling Relays'
-            self.ClearChannel()
-
+        if self.disableOnExit:
+            if (self.ledActive):
+                print 'Turning off LEDs...good night!'
+                self.SetLight(0)
+            if (self.relayActive):
+                print 'Disabling Relays'
+                self.ClearChannel()
+        else:
+            print 'Leaving Relays and Light Active'
         if (self.controller):
             self.controller.Close()
             self.controller = None 
