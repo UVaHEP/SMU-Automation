@@ -237,6 +237,10 @@ class Keithley2611(Sourcemeter):
         cmd = 'smua.source.levelv = {0}'
         try:
             voltage = float(v)
+            if (voltage < self.Vmin):
+                voltage = self.Vmin
+            elif (voltage > self.Vmax)
+                voltage = self.Vmax
             cmd = cmd.format(voltage)
             self.handle.write(cmd)
         except ValueError as e:

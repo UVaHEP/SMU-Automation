@@ -66,7 +66,7 @@ class FT232H:
         self.ClearChannel = self.__pass__
         self.EnableChannel = self.__pass__
 
-    def Persist(self,flag=persist):
+    def Persist(self,persist):
         self.disableOnExit = not persist
         
     def enableMode(self, mode):
