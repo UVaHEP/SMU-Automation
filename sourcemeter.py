@@ -4,14 +4,15 @@ from numpy import array
 
 # Sourcemeter base class
 class Sourcemeter:
-    def __init__(self, host, port, limit=2e-3):
+    def __init__(self, host, port):
+        # "hardwired" limits
+        self.ilimit=10e-3
+        self.Vmax=3
+        self.Vmin=-80
         self.host = host
         self.port = port
-        self.limit = limit  # default current limit set above
         self.volts = []
         self.current = []
-        self.Vmax=3   # "hardwired" voltage limits
-        self.Vmin=-80
         self.hysteresisScan=False
     def Connect(self):
         print 'connecting'
@@ -105,32 +106,24 @@ class Sourcemeter:
     # dump the IV curve data to the screen and optionally a file
     def WriteData(self, output=""):
         if output != "":
-            print 'Writing to {0}.'.format(output)
+            print 'Writing SMU data to {0}.'.format(output)
             outputFile = open(output,'w+')
             outputFile.write('Repeat,VAR2,Point,Voltage,Current,Time\n')
-        print len(self.current)
-        print 'voltage:'
-        print len(self.volts)
-        for i in range(len(self.current)):
+        # len(self.volts) possibly > len(self.current)
+        for i in range(len(self.current)): # n.b. sample list may be truncated by ilimit
             try:
                 current = str(self.current[i]).lstrip('+')
                 outputStr = '1,1,1,{0},{1},1\n'.format(self.volts[i], current)
-                if outputFile:
-                    outputFile.write(outputStr)
-                formattedStr = '%3d %6.2f %6.2e' % (i, float(self.volts[i]), float(current))
-                print formattedStr
+                if outputFile: outputFile.write(outputStr)
+                else: 
+                    oStr = '%3d %6.2f %6.2e' % (i, float(self.volts[i]), float(current))
+                    print oStr
             except Exception as e:
                 print 'something went wrong when writing: {0}.'.format(e)
 
         if output != "":
              outputFile.close()
          
-                #print "%3d %6.2f %6.2e" % (i,self.volts[i],float(self.current[i].lstrip('+')))          
-#            outputString = "{0},{1},{2},{3},{4},{5}\n".format(1,1,1,str(self.volts[i]),str(self.current[i]).lstrip('+'),1)
-#            print "%3d %6.2f %6.2e" % (i,self.volts[i],float(self.current[i].lstrip('+')))
- #           if output != "": outputFile.write(outputString)
-
-
 
     #################
     # Sourcemeter Controls
@@ -152,9 +145,11 @@ class Sourcemeter:
         pass
     def Reset(self):
         pass
-    def VoltageLimit(self, voltage):
+    def SetVoltageLimit(self, voltage):
         pass
-    def CurrentLimit(self, current):
+    def SetCurrentLimit(self, current):
+        pass
+    def SetRepeatAverage(self,samples):
         pass
     def Model(self):
         pass
@@ -174,8 +169,8 @@ class Sourcemeter:
 
 class Keithley2611(Sourcemeter):
 
-    def __init__(self, host, port, limit):
-        Sourcemeter.__init__(self, host, port, limit)
+    def __init__(self, host, port):
+        Sourcemeter.__init__(self, host, port)
         self.handle = vxi11.Intrument(self.host)
         self.Connect()
 
@@ -211,7 +206,7 @@ class Keithley2611(Sourcemeter):
             cmd = cmd.format('smua.AUTORANGE_OFF')
         self.handle.write(cmd)
         
-    def CurrentLimit(self, current):
+    def SetCurrentLimit(self, current):
         cmd = 'smua.source.ilimit.level = {0}'
         try:
             i = float(current)
@@ -220,7 +215,7 @@ class Keithley2611(Sourcemeter):
         except ValueError as e:
             print 'bad current in voltageLimit'
             
-    def VoltageLimit(self, voltage):
+    def SetVoltageLimit(self, voltage):
         cmd = 'smua.source.limitv = {0}'
         try:
             volt = float(voltage)
@@ -251,8 +246,8 @@ class Keithley2611(Sourcemeter):
     def Connect(self):
         self.DisableOutput()
         self.OutputFn('voltage')
-        self.VoltageLimit(-80)
-        self.CurrentLimit(self.limit)
+        self.SetVoltageLimit(-80)
+        self.SetCurrentLimit(self.ilimit)
         self.Autorange(1)
         self.EnableOutput()
         self.handle.timeout = 2000000
@@ -276,16 +271,20 @@ class Keithley2611(Sourcemeter):
             self.current.append(num)
 
 class Keithley2450(Sourcemeter):
-    def __init__(self, host, port, limit):
-        Sourcemeter.__init__(self, host, port, limit)
+    def __init__(self, host, port):
+        Sourcemeter.__init__(self, host, port)
         self.handle=vxi11.Instrument(self.host)
         self.Connect()
+        self.SetRepeatAverage(3)  # Average 3 samples / measurement
         self.handle.write('smu.source.delay = 1.0')
+        self.SetVoltageLimit(self.Vmax)
+        self.SetCurrentLimit(self.ilimit)
+        self.Autorange(1)
         #self.handle.write('smu.source.autodelay = smu.ON')
-        self.handle.write('smu.model.abort()')
+        #self.handle.write('trigger.model.abort()')
         
     def __del__(self):
-        self.handle.write('smu.model.abort()')
+        #self.handle.write('trigger.model.abort()')
         self.handle.close()
         print "Closing TCP connection"
     def Beep(self, notes):
@@ -329,7 +328,7 @@ class Keithley2450(Sourcemeter):
             cmd = cmd.format('smu.OFF')
         self.handle.write(cmd)
         
-    def CurrentLimit(self, current):
+    def SetCurrentLimit(self, current):
         cmd = 'smu.source.ilimit.level = {0}'
         try:
             i = float(current)
@@ -338,7 +337,7 @@ class Keithley2450(Sourcemeter):
         except ValueError as e:
             print 'bad current in CurrentLimit'
             
-    def VoltageLimit(self, voltage):
+    def SetVoltageLimit(self, voltage):
         cmd = 'smu.source.range = {0}'
         try:
             volt = float(voltage)
@@ -347,6 +346,14 @@ class Keithley2450(Sourcemeter):
         except ValueError as e:
             print 'bad voltage in VoltageLimit'
 
+    def SetRepeatAverage(self,samples):
+        if samples<=1:
+            self.handle.write('smu.measure.filter.enable = smu.OFF')
+            return
+        self.handle.write('smu.measure.filter.count = {0}'.format(samples))
+        self.handle.write('smu.measure.filter.type = smu.FILTER_REPEAT_AVG')
+	self.handle.write('smu.measure.filter.enable = smu.ON')
+            
     def Model(self):
         identity = self.handle.ask("*IDN?")
         return identity
@@ -372,25 +379,18 @@ class Keithley2450(Sourcemeter):
         self.DisableOutput()
         return measure
     
-    def Connect(self):
-        
+    def Connect(self):        
         identity = self.Model()
         if (identity.find('MODEL 2450') != -1):
             print 'Model: '+identity
         else:
             print 'Wrong Model %s' % identity
             self.handle.close()
-            return
-            
-
+            return            
         self.Reset()
-        #Set output limits and range 
         self.DisableOutput()
         self.OutputFn('voltage')
-        self.VoltageLimit(-80)
-        self.CurrentLimit(self.limit)
-        self.Autorange(1)
-        self.EnableOutput()
+        self.EnableOutput()  # why do we need this?
         self.DisableOutput()
 
 

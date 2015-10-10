@@ -26,8 +26,8 @@ parser.add_argument('-F','--forward', action='store_true',
                     help="Takes default forward bias I-V curve if no data file")
 parser.add_argument('-H','--hysteresis', action='store_true', default=False,
                     help="Repeat I-V measurement in reverse for hysteresis curve")
-parser.add_argument('-l', '--limit', type=float, default = 10e-3,
-                    help="The current limit [8e-3 A]")
+parser.add_argument('-l', '--limit', type=float, default = 0,
+                    help="The current limit [smu default]")
 parser.add_argument('-s', '--numsteps', type=int, default=300,
                     help="The number of steps in the staircase sweep [300]")
 parser.add_argument('-S', '--stepsize', type=float, default=None,
@@ -55,7 +55,8 @@ Ilimit = args.limit
 ft232Controller = FT232H('spi')
 
 # first configure the sourcemeter
-s = Keithley2450(host, port, args.limit) # remove args from SM base class   
+s = Keithley2450(host, port)
+if args.limit>0: s.SetCurrentLimit(args.limit)
 
 vEnd = args.max
 if args.forward:
@@ -98,6 +99,7 @@ if args.iLED != None:
     ft232Controller.SetLight(args.iLED) #turn on LEDs  
 else: args.iLED=0
     
+# stamp all files with starting time of this script
 now = datetime.now()
 tstamp=now.strftime("-%Y%m%d-%H:%M")
 
@@ -113,5 +115,7 @@ for channel in args.channel:
         ft232Controller.ClearChannel()
         ft232Controller.ActivateChannel(channel)
         
+    print "Start I-V on channel",ch,"at time:",datetime.now().strftime("%H:%M")
     s.MeasureIV()   # take data
     s.WriteData(outfile)   # write out data
+    print "Finish channel",ch,"at time:",datetime.now().strftime("%H:%M")
