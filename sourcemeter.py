@@ -239,7 +239,7 @@ class Keithley2611(Sourcemeter):
             voltage = float(v)
             if (voltage < self.Vmin):
                 voltage = self.Vmin
-            elif (voltage > self.Vmax)
+            elif (voltage > self.Vmax):
                 voltage = self.Vmax
             cmd = cmd.format(voltage)
             self.handle.write(cmd)
@@ -249,8 +249,6 @@ class Keithley2611(Sourcemeter):
 
     
     def Connect(self):
-        
-
         self.DisableOutput()
         self.OutputFn('voltage')
         self.VoltageLimit(-80)
@@ -282,8 +280,12 @@ class Keithley2450(Sourcemeter):
         Sourcemeter.__init__(self, host, port, limit)
         self.handle=vxi11.Instrument(self.host)
         self.Connect()
+        self.handle.write('smu.source.delay = 1.0')
+        #self.handle.write('smu.source.autodelay = smu.ON')
+        self.handle.write('smu.model.abort()')
         
     def __del__(self):
+        self.handle.write('smu.model.abort()')
         self.handle.close()
         print "Closing TCP connection"
     def Beep(self, notes):
@@ -372,7 +374,7 @@ class Keithley2450(Sourcemeter):
     
     def Connect(self):
         
-        identity = self.model()
+        identity = self.Model()
         if (identity.find('MODEL 2450') != -1):
             print 'Model: '+identity
         else:
@@ -393,6 +395,8 @@ class Keithley2450(Sourcemeter):
 
 
     def MeasureIV(self):
+        self.Beep([(0.5,200)])
+        self.handle.write('smu.measure.autozero.once()')
         self.handle.write('smu.source.configlist.create("VoltListSweep")')
         for volt in self.volts:
             line = 'smu.source.level = {0}'.format(volt)
@@ -418,5 +422,5 @@ class Keithley2450(Sourcemeter):
         #print (lastMeasure)
 
         self.current = lastMeasure.strip().split(',')
-
+        self.Beep([(0.5,400)])
 

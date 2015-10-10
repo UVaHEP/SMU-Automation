@@ -10,7 +10,8 @@ parser.add_argument('-c', '--channel', type=int,
                     help="Turn on a channel")
 
 args = parser.parse_args()
-ft232Controller = FT232H('spi', False)
+ft232Controller = FT232H('spi')
+ft232Controller.Persist()
 
 if args.channel is None:
     print 'Please give me a channel'

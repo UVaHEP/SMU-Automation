@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import argparse
 import vxi11
 import time
@@ -24,11 +26,11 @@ parser.add_argument('-F','--forward', action='store_true',
                     help="Takes default forward bias I-V curve if no data file")
 parser.add_argument('-H','--hysteresis', action='store_true', default=False,
                     help="Repeat I-V measurement in reverse for hysteresis curve")
-parser.add_argument('-l', '--limit', type=float, default = 8e-3,
+parser.add_argument('-l', '--limit', type=float, default = 10e-3,
                     help="The current limit [8e-3 A]")
 parser.add_argument('-s', '--numsteps', type=int, default=300,
                     help="The number of steps in the staircase sweep [300]")
-parser.add_argument('-S', '--stepsize', type=int, default=None,
+parser.add_argument('-S', '--stepsize', type=float, default=None,
                     help="Maximum step size in sweep [determined from nsteps]")
 parser.add_argument('-m', '--min', type=float, default=0.0,
                     help="Voltage at which to start staircase sweep")
