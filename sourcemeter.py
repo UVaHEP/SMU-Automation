@@ -277,7 +277,7 @@ class Keithley2450(Sourcemeter):
         self.Connect()
         self.SetRepeatAverage(3)  # Average 3 samples / measurement
         self.handle.write('smu.source.delay = 1.0')
-        self.SetVoltageLimit(self.Vmax)
+        self.SetVoltageLimit(-80)  # need to improce for Fwd protection
         self.SetCurrentLimit(self.ilimit)
         self.Autorange(1)
         #self.handle.write('smu.source.autodelay = smu.ON')
