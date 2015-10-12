@@ -2,7 +2,7 @@
 
 import argparse
 import vxi11
-import time
+import time,os
 from sourcemeter import *
 from FT232H import *
 from datetime import datetime
@@ -48,7 +48,8 @@ parser.add_argument('-i', '--iLED', type=int, nargs = '?', default = None,
                     help="Specifies intensity of LEDs")
 
 args = parser.parse_args()
-host = '128.143.196.77'
+#host = '128.143.196.77'
+host = '192.168.0.2'
 port = 23
 Ilimit = args.limit
 
@@ -104,13 +105,17 @@ now = datetime.now()
 tstamp=now.strftime("-%Y%m%d-%H:%M")
 
 for channel in args.channel:
+    lockfile=open("lock",'w+')
+    print "++++++++++++++++++++++++++++++++++++++++"
     print "Doing I-V scan for pin #",channel
     # construct file name
-    if channel<0: ch="0"
-    else: ch=str(channel)
+    if channel<0: ch="00"
+    else: ch="%02d" % channel
     if args.output=="":
         outfile=args.device+'_Ch'+ch+'_iLED'+str(args.iLED)+tstamp+'.csv'
     else: outfile=args.output
+    lockfile.write("Outfile= "+outfile+"\n")
+    lockfile.flush()
     if channel != -1:
         ft232Controller.ClearChannel()
         ft232Controller.ActivateChannel(channel)
@@ -119,3 +124,6 @@ for channel in args.channel:
     s.MeasureIV()   # take data
     s.WriteData(outfile)   # write out data
     print "Finish channel",ch,"at time:",datetime.now().strftime("%H:%M")
+    print "----------------------------------------"
+    lockfile.close()
+    os.remove("lock")
