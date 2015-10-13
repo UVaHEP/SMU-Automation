@@ -37,6 +37,7 @@ if args.voltage is None:
 else:
     voltage = args.voltage
     s.EnableOutput()
+    #s.ReadVIPointTest(voltage)
     print('measure: {0}'.format(s.ReadVIPoint(voltage)))
     s.DisableOutput()
 

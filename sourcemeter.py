@@ -1,5 +1,6 @@
 import vxi11
 import time,sys
+from math import sqrt
 from numpy import array
 
 # To do kill other possible conenctions in Connect method before starting
@@ -289,7 +290,7 @@ class Keithley2450(Sourcemeter):
         #self.handle.write('trigger.model.abort()')
         
     def __del__(self):
-        #self.handle.write('trigger.model.abort()')
+        #self.handle.write('*RST')
         self.handle.close()
         print "Closing TCP connection"
  
@@ -395,9 +396,38 @@ class Keithley2450(Sourcemeter):
         except ValueError as e:
             print 'bad voltage in Set Voltage'
 
+
+    #def ReadUntilStable(self,v=0):
+    #    self.SetVoltage(v)
+    #    self.handle.write('smu.measure.count = 1')
+
+    def ReadVIPointTest(self,v=None):
+        if v != None:
+            self.SetVoltage(v) # otherwise use last set voltage
+        #set to 1 measurement
+        self.handle.write('smu.measure.count = 1')
+        self.EnableOutput()
+        samps=[]
+        nave=5
+        for i in range(100):
+            self.handle.write('print(smu.measure.read())')
+            measure = self.handle.read()
+            samps.append(float(measure))
+            if i>=nave-1:
+                sum=0; sum2=0
+                for n in range(i+1-nave,i+1):
+                    sum+=samps[n]; sum2+=samps[n]*samps[n]
+                sigma=sqrt(1.0/(nave-1)*(sum2-sum*sum/nave))
+                print i,samps[i],sum/nave,sigma
+            else:
+                print i,samps[i],1,1
+        print 'i-v measure: {0}'.format(samps[99])
+        self.DisableOutput()
+        return measure
+            
     def ReadVIPoint(self,v=None):
         if v != None:
-            self.SetVoltage(v)
+            self.SetVoltage(v) # otherwise use last set voltage
         #set to 1 measurement
         self.handle.write('smu.measure.count = 1')
         self.EnableOutput()
@@ -410,7 +440,7 @@ class Keithley2450(Sourcemeter):
     def Discharge(self, n=60):
         print "Discharging cycle, measurements =",n
         self.SetVoltage(0)
-        self.handle.write('smu.source.output = smu.ON')
+        self.EnableOutput()
         for i in range(n):
             self.handle.write('print(smu.measure.read())')
             measure = self.handle.read()
@@ -418,8 +448,8 @@ class Keithley2450(Sourcemeter):
             sys.stdout.flush()
             time.sleep(1)
         print ""
+        self.DisableOutput()
         self.ClearBuffer()
-        self.handle.write('smu.source.output = smu.OFF')
         
 
     def MeasureIV(self):
