@@ -17,6 +17,9 @@ class Sourcemeter:
         self.volts = []
         self.current = []
         self.hysteresisScan=False
+        self.discharge0=10  # discharge cycles before
+        self.discharge1=60  # and after measurement
+        
     def Connect(self):
         print 'connecting'
         pass
@@ -30,6 +33,18 @@ class Sourcemeter:
             print "Warning voltage limited at",self.Vmax
             return self.Vmax
         return volt
+
+    # number of measurements to averarage in hardware
+    def SetRepeatAverage(self, nsamples):
+        pass
+    # set hold source time before taking measurement
+    def SetSourceDelay(self,delay):
+        pass
+
+    # todo update this to be a Wall Time
+    def SetDischargeCycles(self,t0,t1):
+        self.discharge0=t0
+        self.discharge1=t1
     
     def SetVsteps(self,vStart,vEnd=0,steps=0,dV=0):
         if type(vStart)==str:
@@ -281,11 +296,11 @@ class Keithley2450(Sourcemeter):
         self.ClearBuffer()
         self.Connect()
         self.SetRepeatAverage(3)  # Average 3 samples / measurement
-        self.handle.write('smu.source.delay = 1.0')
+        self.SetSourceDelay(1.0)  # hold off time before measurements
         self.SetVoltageLimit(-80)  # need to improve for Fwd protection
         self.SetCurrentLimit(self.ilimit)
         self.Autorange(1)
-        self.handle.write('smu.measure.nplc = 3')
+        self.SetNPLC(3)
         #self.handle.write('smu.source.autodelay = smu.ON')
         #self.handle.write('trigger.model.abort()')
         
@@ -382,7 +397,13 @@ class Keithley2450(Sourcemeter):
         self.handle.write('smu.measure.filter.count = {0}'.format(samples))
         self.handle.write('smu.measure.filter.type = smu.FILTER_REPEAT_AVG')
 	self.handle.write('smu.measure.filter.enable = smu.ON')
-            
+
+    def SetSourceDelay(self,delay):
+        self.handle.write('smu.source.delay = {0}'.format(samples))
+
+    def SetNPLC(self,nplc=3):
+        self.handle.write('smu.measure.nplc = {0}'.format(nplc))
+        
     def Model(self):
         identity = self.handle.ask("*IDN?")
         return identity
@@ -437,7 +458,7 @@ class Keithley2450(Sourcemeter):
         self.DisableOutput()
         return measure
 
-    def Discharge(self, n=60):
+    def Discharge(self, n=10):
         print "Discharging cycle, measurements =",n
         self.SetVoltage(0)
         self.EnableOutput()
@@ -454,7 +475,7 @@ class Keithley2450(Sourcemeter):
 
     def MeasureIV(self):
         self.Beep([(0.5,200)])
-        self.Discharge(10) 
+        self.Discharge(self.discharge0) 
         self.handle.write('smu.measure.autozero.once()')
         self.handle.write('smu.source.configlist.create("VoltListSweep")')
         for volt in self.volts:
@@ -483,6 +504,5 @@ class Keithley2450(Sourcemeter):
         self.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.readings)')
         lastMeasure = self.handle.read()
         self.current = lastMeasure.strip().split(',')
-        #self.Discharge()
+        self.Discharge(self.discharge1)
         self.Beep([(0.5,400)])
-

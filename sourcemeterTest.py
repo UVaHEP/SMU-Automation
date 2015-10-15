@@ -104,6 +104,13 @@ else: args.iLED=0
 now = datetime.now()
 tstamp=now.strftime("-%Y%m%d-%H:%M")
 
+# hack: if string "fast" is included in the device name, then update the
+# default SMU settings
+if "fast" in args.device:
+    s.SetSourceDelay(0.01)      # 10 ms soure delay
+    s.SetDischargeCycles(10,10) # just do 10 cycles after measurement 
+
+
 for channel in args.channel:
     lockfile=open("lock",'w+')
     print "++++++++++++++++++++++++++++++++++++++++"
