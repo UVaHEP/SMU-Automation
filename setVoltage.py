@@ -13,28 +13,40 @@ parser.add_argument('-c', '--channel', type=int,
 parser.add_argument('-v', '--voltage', type=float,
                     help="Set voltage for a channel")
 parser.add_argument('-d', '--duration', type=int, default=10,
-                    help="Mesaurement duration in seconds")  # TBD
+                    help="Measurement duration in seconds")  # TBD
+parser.add_argument('-k', '--k2611a', action='store_true',
+                    help="Use the Keithley 2611a rather than the 2450")
+parser.add_argument('-a', '--host', type=str, default='192.168.0.2',
+                    help="Specify the host address for the Keithley")
 
 args = parser.parse_args()
 
 if args.channel is None:
-    print 'Please give me a channel'
-    exit()
+    print 'Skipping Channel' 
+else:
+    print 'Turning on Channel {0}.'.format(args.channel)
 
-print 'Turning on Channel {0}.'.format(args.channel)
+    ft232Controller = FT232H('spi')
+    ft232Controller.Persist()
+    ft232Controller.ClearChannel()
+    ft232Controller.ActivateChannel(args.channel)
 
-ft232Controller = FT232H('spi')
-ft232Controller.Persist()
-ft232Controller.ClearChannel()
-ft232Controller.ActivateChannel(args.channel)
-
-host = '192.168.0.2'
+#host = '192.168.0.2'
+host = args.host
 port = 23
-s = Keithley2450(host, port)
+if args.k2611a:
+    s = Keithley2611(host, port)
+else:
+    s = Keithley2450(host, port)
+
+
+
+
 if args.voltage is None:
     voltage = 0.0
     s.SetVoltage(voltage)
 else:
+    s.Beep([(0.5, 200)])
     voltage = args.voltage
     s.EnableOutput()
     #s.ReadVIPointTest(voltage)

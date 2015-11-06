@@ -190,16 +190,16 @@ class Keithley2611(Sourcemeter):
 
     def __init__(self, host, port):
         Sourcemeter.__init__(self, host, port)
-        self.handle = vxi11.Intrument(self.host)
+        self.handle = vxi11.Instrument(self.host)
         self.Connect()
 
     def __del__(self):
         self.handle.close()
         print 'Closing TCP connection'
     def DisableOutput(self):
-        self.handle.write('smua.source.output = smua.OFF')
+        self.handle.write('smua.source.output = smua.OUTPUT_OFF')
     def EnableOutput(self):
-        self.handle.write('smua.source.output = smua.ON')
+        self.handle.write('smua.source.output = smua.OUTPUT_ON')
 
     def Reset(self):
         self.handle.write('smua.reset()')
@@ -224,9 +224,23 @@ class Keithley2611(Sourcemeter):
         else:
             cmd = cmd.format('smua.AUTORANGE_OFF')
         self.handle.write(cmd)
+
+    def Beep(self, notes):
+        #Beep takes a list of tuples where each tuple consists of
+        #two elements (duration in seconds, frequency in hertz)
+        #so pass in something like [(0.5, 200), (0.25, 450), ... ]
+        cmd = 'beeper.beep({0}, {1})'
+        try: 
+            for note in notes:
+                duration, freq = note
+                beepcmd = cmd.format(duration, freq)
+                self.handle.write(beepcmd)
+        except Exception as e:
+            print 'Beeper failed to work.'
+
         
     def SetCurrentLimit(self, current):
-        cmd = 'smua.source.ilimit.level = {0}'
+        cmd = 'smua.source.limiti = {0}'
         try:
             i = float(current)
             cmd = cmd.format(i)
@@ -246,6 +260,18 @@ class Keithley2611(Sourcemeter):
     def Model(self):
         identity = self.handle.ask("*IDN?")
         return identity
+
+    def ReadVIPoint(self,v=None):
+        if v != None:
+            self.SetVoltage(v) # otherwise use last set voltage
+            #set to 1 measurement
+            self.handle.write('smua.measure.count = 1')
+            self.EnableOutput()
+            self.handle.write('print(smua.measure.i())')
+            measure = self.handle.read()
+            print 'i-v measure: {0}'.format(measure)
+            self.DisableOutput()
+            return measure
 
     def SetVoltage(self, v):
         cmd = 'smua.source.levelv = {0}'
