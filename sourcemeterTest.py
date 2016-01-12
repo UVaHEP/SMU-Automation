@@ -44,7 +44,7 @@ parser.add_argument('-c', '--channel', type=int, nargs ='*',
                     help="Take I-V curves at specified channels")
 parser.add_argument('-A', '--all', action='store_true',
                     help="Take I-V curve for all channels")
-parser.add_argument('-i', '--iLED', type=int, nargs = '?', default = None,
+parser.add_argument('-i', '--iLED', type=int, nargs = '?', default = 0,
                     help="Specifies intensity of LEDs")
 
 args = parser.parse_args()
@@ -97,7 +97,12 @@ if args.channel == None:
 # set the LED
 if args.iLED != None:
     print "Light curves will use LED value",args.iLED
-    ft232Controller.SetLight(args.iLED) #turn on LEDs  
+    ft232Controller.SetLight(args.iLED) #turn on LEDs
+    ft232Controller.Persist()
+    ft232Controller = None
+    time.sleep(0.25)
+    ft232Controller = FT232H('spi')
+    
 else: args.iLED=0
     
 # stamp all files with starting time of this script

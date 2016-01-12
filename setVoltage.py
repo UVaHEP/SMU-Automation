@@ -18,6 +18,7 @@ parser.add_argument('-k', '--k2611a', action='store_true',
                     help="Use the Keithley 2611a rather than the 2450")
 parser.add_argument('-a', '--host', type=str, default='192.168.0.2',
                     help="Specify the host address for the Keithley")
+parser.add_argument('-p', '--persist', action='store_true', help='Leave voltage on')
 
 args = parser.parse_args()
 
@@ -41,7 +42,6 @@ else:
 
 
 
-
 if args.voltage is None:
     voltage = 0.0
     s.SetVoltage(voltage)
@@ -49,9 +49,10 @@ else:
     s.Beep([(0.5, 200)])
     voltage = args.voltage
     s.EnableOutput()
-    #s.ReadVIPointTest(voltage)
-    print('measure: {0}'.format(s.ReadVIPoint(voltage)))
-    s.DisableOutput()
+    s.ReadVIPoint(voltage)
+    print('V: {0}, I measure: {1}'.format(voltage,s.ReadVIPoint(voltage)))
+    if not args.persist:
+    	s.DisableOutput()
 
     
 
