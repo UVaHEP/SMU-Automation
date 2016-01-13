@@ -347,8 +347,8 @@ class Keithley2450(Sourcemeter):
             print 'Wrong Model %s' % identity
             self.handle.close()
             return            
-        self.Reset()
-        self.DisableOutput()
+        #self.Reset()
+        #self.DisableOutput()
         self.OutputFn('voltage')	
 
     def ClearBuffer(self):
@@ -484,8 +484,8 @@ class Keithley2450(Sourcemeter):
         self.EnableOutput()
         self.handle.write('print(smu.measure.read())')
         measure = self.handle.read()
-        print 'i-v measure: {0}'.format(measure)
-        self.DisableOutput()
+        #print 'i-v measure: {0}'.format(measure)
+        #self.DisableOutput()
         return measure
 
     def Discharge(self, n=10):

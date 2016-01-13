@@ -23,7 +23,7 @@ parser.add_argument('-p', '--persist', action='store_true', help='Leave voltage 
 args = parser.parse_args()
 
 if args.channel is None:
-    print 'Skipping Channel' 
+    print 'Warning: Using current channel selection' 
 else:
     print 'Turning on Channel {0}.'.format(args.channel)
 
@@ -41,21 +41,21 @@ else:
     s = Keithley2450(host, port)
 
 
-
 if args.voltage is None:
     voltage = 0.0
-    s.SetVoltage(voltage)
+    print "Resetting voltage to 0"
+    for i in range(2):
+        s.SetVoltage(voltage)
+        print('V: {0}, I measure: {1}'.format(voltage,s.ReadVIPoint(voltage)))
+    s.DisableOutput()
 else:
     s.Beep([(0.5, 200)])
     voltage = args.voltage
     s.EnableOutput()
-    s.ReadVIPoint(voltage)
     print('V: {0}, I measure: {1}'.format(voltage,s.ReadVIPoint(voltage)))
     if not args.persist:
     	s.DisableOutput()
+    else:
+        print "Warning: Voltage is persistant! Turn off by hand"
 
     
-
-
-    
-
