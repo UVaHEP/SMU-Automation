@@ -91,12 +91,13 @@ class Sourcemeter:
             volt = 0.0
             while round(volt,4)>=(-60.0):
                 self.volts.append(str(round(volt,4)))
-                if round(volt,4) >(-40.0):
-                    volt += -0.5
-                elif round(volt,4) >(-50.0):
-                    volt += -0.1
-                else:
-                    volt += -0.05
+                volt += -0.1
+                #if round(volt,4) >(-40.0):
+                #    volt += -0.5
+                #elif round(volt,4) >(-50.0):
+                #    volt += -0.1
+                #else:
+                #    volt += -0.05
 
                     
     # Get list of voltages from a text file
@@ -327,7 +328,7 @@ class Keithley2450(Sourcemeter):
         self.Connect()
         self.SetRepeatAverage(3)  # Average 3 samples / measurement
         self.SetSourceDelay(1.0)  # hold off time before measurements
-        self.SetVoltageLimit(-80)  # need to improve for Fwd protection
+        self.SetVoltageLimit(-80) # need to improve for Fwd protection
         self.SetCurrentLimit(self.ilimit)
         self.Autorange(1)
         self.SetNPLC(3)
