@@ -57,6 +57,7 @@ ft232Controller = FT232H('spi')
 
 # first configure the sourcemeter
 s = Keithley2450(host, port)
+s.Reset()
 if args.limit>0: s.SetCurrentLimit(args.limit)
 
 vEnd = args.max

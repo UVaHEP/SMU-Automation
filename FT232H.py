@@ -167,7 +167,7 @@ class FT232H:
             self.enableMode('i2c')
 
         self.ledActive = True 
-        intensity = (4094 - light)
+        intensity = light
         vHigh = chr((intensity >> 4))
         vLow = chr((intensity & 0x0f) << 4)
 

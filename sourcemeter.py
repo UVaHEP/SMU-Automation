@@ -523,6 +523,7 @@ class Keithley2450(Sourcemeter):
 	print 'recvd %s' % opcValue
     	print 'waiting for opc'
    	while (opcValue.find('1') == -1):
+            print "ask OPC"
             try:
                 opcValue = self.handle.ask('*OPC?')
                 print 'opc value recvd %s' % opcValue
