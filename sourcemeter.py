@@ -58,8 +58,12 @@ class Sourcemeter:
             if steps==1:
                 self.volts.append(vEnd)
                 return
-            volts=array(range(steps+1))*1.0/steps*(vEnd-vStart) # fix bug!
-            self.volts=volts.tolist()
+            delta = float(vEnd-vStart)/float(steps)
+            for i in range(0,steps+1):
+                self.volts.append(i*delta+vStart)
+                
+            #volts=array(range(steps+1))*1.0/steps*(vEnd-vStart) # fix bug!
+            #self.volts=volts.tolist()
         else: # (maximum) step size is set
             volt=vStart
             dV=cmp(vEnd-vStart,0)*dV # get the sign right
@@ -343,8 +347,8 @@ class Keithley2450(Sourcemeter):
             print 'Wrong Model %s' % identity
             self.handle.close()
             return            
-        self.Reset()
-        self.DisableOutput()
+        #self.Reset()
+        #self.DisableOutput()
         self.OutputFn('voltage')	
 
     def ClearBuffer(self):
@@ -425,7 +429,7 @@ class Keithley2450(Sourcemeter):
 	self.handle.write('smu.measure.filter.enable = smu.ON')
 
     def SetSourceDelay(self,delay):
-        self.handle.write('smu.source.delay = {0}'.format(samples))
+        self.handle.write('smu.source.delay = {0}'.format(delay))
 
     def SetNPLC(self,nplc=3):
         self.handle.write('smu.measure.nplc = {0}'.format(nplc))
@@ -480,8 +484,8 @@ class Keithley2450(Sourcemeter):
         self.EnableOutput()
         self.handle.write('print(smu.measure.read())')
         measure = self.handle.read()
-        print 'i-v measure: {0}'.format(measure)
-        self.DisableOutput()
+        #print 'i-v measure: {0}'.format(measure)
+        #self.DisableOutput()
         return measure
 
     def Discharge(self, n=10):
