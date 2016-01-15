@@ -26,8 +26,8 @@ parser.add_argument('-F','--forward', action='store_true',
                     help="Takes default forward bias I-V curve if no data file")
 parser.add_argument('-H','--hysteresis', action='store_true', default=False,
                     help="Repeat I-V measurement in reverse for hysteresis curve")
-parser.add_argument('-l', '--limit', type=float, default = 0,
-                    help="The current limit [smu default]")
+parser.add_argument('-l', '--limit', type=float, default = 0.01,
+                    help="The current limit [0.01]")
 parser.add_argument('-s', '--numsteps', type=int, default=100,
                     help="The number of steps in the staircase sweep [100]")
 parser.add_argument('-S', '--stepsize', type=float, default=None,
@@ -58,6 +58,7 @@ ft232Controller = FT232H('spi')
 # first configure the sourcemeter
 s = Keithley2450(host, port)
 s.Reset()
+s.Config()
 if args.limit>0: s.SetCurrentLimit(args.limit)
 
 vEnd = args.max

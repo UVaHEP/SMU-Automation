@@ -9,7 +9,7 @@ from numpy import array
 class Sourcemeter:
     def __init__(self, host, port):
         # "hardwired" limits
-        self.ilimit=10e-3
+        self.ilimit=1e-3
         self.Vmax=3
         self.Vmin=-80
         self.host = host
@@ -326,6 +326,10 @@ class Keithley2450(Sourcemeter):
         self.handle=vxi11.Instrument(self.host)
         self.ClearBuffer()
         self.Connect()
+        #self.Reset()
+        self.Config()
+
+    def Config(self):
         self.SetRepeatAverage(3)  # Average 3 samples / measurement
         self.SetSourceDelay(1.0)  # hold off time before measurements
         self.SetVoltageLimit(-80) # need to improve for Fwd protection
@@ -383,6 +387,7 @@ class Keithley2450(Sourcemeter):
 
     def Reset(self):
         self.handle.write('smu.reset()')
+        self.Config()
 
     def OutputFn(self, func):
         cmd = 'smu.source.func = {0}'
