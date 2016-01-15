@@ -28,10 +28,10 @@ parser.add_argument('-H','--hysteresis', action='store_true', default=False,
                     help="Repeat I-V measurement in reverse for hysteresis curve")
 parser.add_argument('-l', '--limit', type=float, default = 0,
                     help="The current limit [smu default]")
-parser.add_argument('-s', '--numsteps', type=int, default=300,
-                    help="The number of steps in the staircase sweep [300]")
+parser.add_argument('-s', '--numsteps', type=int, default=100,
+                    help="The number of steps in the staircase sweep [100]")
 parser.add_argument('-S', '--stepsize', type=float, default=None,
-                    help="Maximum step size in sweep [determined from nsteps]")
+                    help="Step size for the staircase sweep [None]")
 parser.add_argument('-m', '--min', type=float, default=0.0,
                     help="Voltage at which to start staircase sweep")
 parser.add_argument('-x', '--max', type=float, default= -60.0,
@@ -112,7 +112,8 @@ tstamp=now.strftime("-%Y%m%d-%H:%M")
 # hack: if string "fast" is included in the device name, then update the
 # default SMU settings
 if "fast" in args.device:
-    s.SetSourceDelay(0.01)      # 10 ms soure delay
+    print "Using 10ms source delay for faster scan" 
+    s.SetSourceDelay(0.01)      # 10 ms source delay
     s.SetDischargeCycles(10,10) # just do 10 cycles after measurement 
 
 
@@ -139,3 +140,4 @@ for channel in args.channel:
     print "----------------------------------------"
     lockfile.close()
     os.remove("lock")
+    
