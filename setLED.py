@@ -12,7 +12,7 @@ LightCtl = mpsse.MPSSE(mpsse.I2C, mpsse.ONE_HUNDRED_KHZ, mpsse.MSB)
 LightCtl.PinLow(mpsse.GPIOH5)
 address = '\xC0'
 DACupdate = '\x40'
-light  = (4094-args.iLED)
+light  = (0+args.iLED)
 vHigh = chr((light >> 4))
 vLow = chr((light & 0x0f) << 4)
 voltage = str(hex(light)).lstrip('0x')
