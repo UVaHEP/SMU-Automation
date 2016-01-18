@@ -357,7 +357,8 @@ class Keithley2450(Sourcemeter):
         self.OutputFn('voltage')	
 
     def ClearBuffer(self):
-        self.handle.write('print(1234567890)')  #
+        return
+        self.handle.write('print(1234567890)') 
         try:
 	    junk = self.handle.read()               # make sure buffer is clear
             while(junk.find('123456789') == -1):
@@ -541,7 +542,6 @@ class Keithley2450(Sourcemeter):
         self.ClearBuffer()
         self.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.readings)')
         lastMeasure = self.handle.read()
-        print lastMeasure
         self.current = lastMeasure.strip().split(',')
         self.Discharge(self.discharge1)
         self.Beep([(0.5,400)])
