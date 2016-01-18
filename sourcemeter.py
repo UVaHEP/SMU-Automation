@@ -452,7 +452,7 @@ class Keithley2450(Sourcemeter):
             self.handle.write(cmd)
         except ValueError as e:
             print 'bad voltage in Set Voltage'
-
+        
 
     #def ReadUntilStable(self,v=0):
     #    self.SetVoltage(v)
@@ -489,6 +489,7 @@ class Keithley2450(Sourcemeter):
         self.handle.write('smu.measure.count = 1')
         self.EnableOutput()
         self.handle.write('print(smu.measure.read())')
+        self.ClearBuffer()
         measure = self.handle.read()
         #print 'i-v measure: {0}'.format(measure)
         #self.DisableOutput()
@@ -520,7 +521,7 @@ class Keithley2450(Sourcemeter):
             self.handle.write('smu.source.configlist.store("VoltListSweep")')
         self.handle.write('smu.source.sweeplist("VoltListSweep",1)')
         self.handle.write('trigger.model.initiate()')
-#        self.handle.write('waitcomplete()')
+        #self.handle.write('waitcomplete()')
         self.handle.timeout = 20000
         time.sleep(0.25)
         opcValue = '0'
@@ -532,7 +533,7 @@ class Keithley2450(Sourcemeter):
             try:
                 opcValue = self.handle.ask('*OPC?')
                 print 'opc value recvd %s' % opcValue
-                time.sleep(20)
+                time.sleep(10)
 	    except vxi11.vxi11.Vxi11Exception as e:
 	        print 'timeout? {0}'.format(e)
                 continue
@@ -540,6 +541,7 @@ class Keithley2450(Sourcemeter):
         self.ClearBuffer()
         self.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.readings)')
         lastMeasure = self.handle.read()
+        print lastMeasure
         self.current = lastMeasure.strip().split(',')
         self.Discharge(self.discharge1)
         self.Beep([(0.5,400)])

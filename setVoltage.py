@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description='Select a channel')
 
 parser.add_argument('-c', '--channel', type=int,
                     help="Turn on a channel")
-parser.add_argument('-v', '--voltage', type=float,
+parser.add_argument('-v', '--voltage', type=float, default=0.0,
                     help="Set voltage for a channel")
 parser.add_argument('-d', '--duration', type=int, default=10,
                     help="Measurement duration in seconds")  # TBD
@@ -24,9 +24,9 @@ parser.add_argument('-q', '--quiet', action='store_true', help='No Beeping!')
 args = parser.parse_args()
 
 if args.channel is None:
-    print 'Warning: Using current channel selection' 
+    print 'setV::Warning: Using current channel selection' 
 else:
-    print 'Turning on Channel {0}.'.format(args.channel)
+    print 'setV::Info: Turning on Channel {0}.'.format(args.channel)
 
     ft232Controller = FT232H('spi')
     ft232Controller.Persist()
@@ -41,22 +41,22 @@ if args.k2611a:
 else:
     s = Keithley2450(host, port)
 
+#s.Reset()
 
-if args.voltage is None:
-    voltage = 0.0
-    print "Resetting voltage to 0"
-    for i in range(2):
-        s.SetVoltage(voltage)
-        print('V: {0}, I measure: {1}'.format(voltage,s.ReadVIPoint(voltage)))
+if args.voltage == 0:
+    print "Setting voltage to 0"
+
+if not args.quiet: s.Beep([(0.5, 200)])
+voltage = args.voltage
+s.EnableOutput()
+current=s.ReadVIPoint(voltage)
+try:
+    print('V: {0}, I measure: {1}'.format(voltage,s.ReadVIPoint(voltage)))
+except:
+    print "Error reading returned current msg",current
+if not args.persist:
     s.DisableOutput()
 else:
-    if not args.quiet: s.Beep([(0.5, 200)])
-    voltage = args.voltage
-    s.EnableOutput()
-    print('V: {0}, I measure: {1}'.format(voltage,s.ReadVIPoint(voltage)))
-    if not args.persist:
-    	s.DisableOutput()
-    else:
-        print "Warning: Voltage is persistant! Turn off by hand"
+    print "setV::Warning: Voltage is persistant! Turn off by hand"
 
     

@@ -44,7 +44,7 @@ parser.add_argument('-c', '--channel', type=int, nargs ='*',
                     help="Take I-V curves at specified channels")
 parser.add_argument('-A', '--all', action='store_true',
                     help="Take I-V curve for all channels")
-parser.add_argument('-i', '--iLED', type=int, nargs = '?', default = 0,
+parser.add_argument('-i', '--iLED', type=int, nargs = '?', default=None,
                     help="Specifies intensity of LEDs")
 
 args = parser.parse_args()
@@ -58,7 +58,7 @@ ft232Controller = FT232H('spi')
 # first configure the sourcemeter
 s = Keithley2450(host, port)
 s.Reset()
-s.Config()
+#s.Config() # not needed, done by Reset()
 if args.limit>0: s.SetCurrentLimit(args.limit)
 
 vEnd = args.max
@@ -116,9 +116,10 @@ tstamp=now.strftime("-%Y%m%d-%H:%M")
 if "fast" in args.device:
     print "Using 10ms source delay for faster scan" 
     s.SetSourceDelay(0.01)      # 10 ms source delay
-    s.SetDischargeCycles(10,10) # just do 10 cycles after measurement 
+    s.SetDischargeCycles(3,3)   # just do 3 cycles before/after measurement 
+    s.SetNPLC(1)
 
-
+    
 for channel in args.channel:
     lockfile=open("lock",'w+')
     print "++++++++++++++++++++++++++++++++++++++++"
@@ -129,6 +130,7 @@ for channel in args.channel:
     if args.output=="":
         outfile=args.device+'_Ch'+ch+'_iLED'+str(args.iLED)+tstamp+'.csv'
     else: outfile=args.output
+    print "Outputfile:",outfile
     lockfile.write("Outfile= "+outfile+"\n")
     lockfile.flush()
     if channel != -1:

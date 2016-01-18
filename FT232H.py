@@ -21,7 +21,8 @@ class FT232H:
         self.DACupdate = '\x40'
         self.ledActive = False
         self.relayActive = False 
-
+        self.debug = False
+        
         try:
             if (mode == 'i2c'):
                 self.mode = 'i2c'
@@ -43,7 +44,7 @@ class FT232H:
 
     def __pass__(self):
         print 'pass' 
-    
+        
     def __del__(self):
         if self.disableOnExit:
             if (self.ledActive):
@@ -66,6 +67,11 @@ class FT232H:
         self.ClearChannel = self.__pass__
         self.EnableChannel = self.__pass__
 
+        
+    def Debug(self,flag=True):
+        self.debug=flag
+
+        
     def Persist(self,persist=True):
         self.disableOnExit = not persist
         
@@ -86,10 +92,6 @@ class FT232H:
 
         except Exception as e:
             print "Couldn't enable mode {0}, because of {1}.".format(mode, e)
-
-
-        
-
         
     def setCSPins(self, n, level):
         if (self.mode != 'spi'):
@@ -111,16 +113,16 @@ class FT232H:
             self.controller.PinHigh(mpsse.GPIOL0)
             self.controller.PinHigh(mpsse.GPIOL2)
         elif n == 1 and level == 0:
-            print 'chip 1 low'
+            if (self.debug): print 'chip 1 low'
             self.controller.PinLow(mpsse.GPIOL0)
         elif n == 1 and level == 1:
-            print 'chip 1 high'
+            if (self.debug): print 'chip 1 high'
             self.controller.PinHigh(mpsse.GPIOL0)
         elif n == 2 and level == 0:
-            print 'chip 2 low'
+            if (self.debug): print 'chip 2 low'
             self.controller.PinLow(mpsse.GPIOL2)
         elif n == 2 and level == 1:
-            print 'chip 2 high'
+            if (self.debug): print 'chip 2 high'
             self.controller.PinLow(mpsse.GPIOL2)
 
 
@@ -156,7 +158,8 @@ class FT232H:
         if (self.mode != 'spi'):
             self.enableMode('spi')
 
-        print 'using hex code:{0}'.format(hex(self.activeChannel))
+        if (self.debug):
+            print 'using hex code:{0}'.format(hex(self.activeChannel))
         self.controller.Start()
         self.controller.WriteBits(self.activeChannel, 8)
         self.controller.Stop()

@@ -4,7 +4,8 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Takes I-V Curves')
 
-parser.add_argument('-i', '--iLED', type=int, nargs='?', default = '\xFF\xE0')
+#parser.add_argument('-i', '--iLED', type=int, nargs='?', default = '\xFF\xE0')
+parser.add_argument('-i', '--iLED', type=int, nargs='?', default = '0')
 
 args = parser.parse_args()
 
