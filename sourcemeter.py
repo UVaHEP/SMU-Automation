@@ -1,7 +1,6 @@
 import vxi11
 import time,sys
 from math import sqrt
-from numpy import array
 
 # To do kill other possible conenctions in Connect method before starting
 
@@ -62,8 +61,6 @@ class Sourcemeter:
             for i in range(0,steps+1):
                 self.volts.append(i*delta+vStart)
                 
-            #volts=array(range(steps+1))*1.0/steps*(vEnd-vStart) # fix bug!
-            #self.volts=volts.tolist()
         else: # (maximum) step size is set
             volt=vStart
             dV=cmp(vEnd-vStart,0)*dV # get the sign right
