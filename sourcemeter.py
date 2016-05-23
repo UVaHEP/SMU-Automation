@@ -1,6 +1,7 @@
 import vxi11
 import time,sys
 from math import sqrt
+from numpy import array
 
 # To do kill other possible conenctions in Connect method before starting
 
@@ -61,6 +62,8 @@ class Sourcemeter:
             for i in range(0,steps+1):
                 self.volts.append(i*delta+vStart)
                 
+            #volts=array(range(steps+1))*1.0/steps*(vEnd-vStart) # fix bug!
+            #self.volts=volts.tolist()
         else: # (maximum) step size is set
             volt=vStart
             dV=cmp(vEnd-vStart,0)*dV # get the sign right
@@ -186,18 +189,69 @@ class Sourcemeter:
         pass
 
     
-        
+      
 
 class Keithley2611(Sourcemeter):
 
     def __init__(self, host, port):
         Sourcemeter.__init__(self, host, port)
         self.handle = vxi11.Instrument(self.host)
+        self.ClearBuffer()
         self.Connect()
-
+        self.Config()
+        
+    def Config(self):
+        self.SetRepeatAverage(3)  # Average 3 samples / measurement
+        self.SetSourceDelay(1.0)  # hold off time before measurements
+        self.SetVoltageLimit(-80) # need to improve for Fwd protection
+        self.SetCurrentLimit(self.ilimit)
+        self.Autorange(1)
+        self.SetNPLC(3)
+        #self.handle.write('smu.source.autodelay = smu.ON')
+        #self.handle.write('trigger.model.abort()')
+                    
     def __del__(self):
         self.handle.close()
         print 'Closing TCP connection'
+    
+    def Connect(self):
+        identity = self.Model()
+        if (identity.find('MODEL 2611A') != -1):
+            print 'Model: '+identity
+        else:
+            print 'Wrong Model %s' % identity
+            self.handle.close()
+            return            
+        #self.Reset()
+        #self.DisableOutput()
+        self.OutputFn('voltage')       
+
+        
+    def ClearBuffer(self):
+        return
+        self.handle.write('print(1234567890)') 
+        try:
+	    junk = self.handle.read() # make sure buffer is clear
+            while(junk.find('123456789') == -1):
+                junk = self.handle.read()
+        except vxi11.vxi11.Vxi11Exception as e:
+            print 'timed out waiting for clear buffer? {0}'.format(e)
+
+    def Beep(self, notes):
+        #Beep takes a list of tuples where each tuple consists of
+        #two elements (duration in seconds, frequency in hertz)
+        #so pass in something like [(0.5, 200), (0.25, 450), ... ]
+        cmd = 'beeper.beep({0}, {1})'
+        try: 
+            for note in notes:
+                duration, freq = note
+                beepcmd = cmd.format(duration, freq)
+                self.handle.write(beepcmd)
+        except Exception as e:
+            print 'Beeper failed to work.'
+
+  
+        
     def DisableOutput(self):
         self.handle.write('smua.source.output = smua.OUTPUT_OFF')
     def EnableOutput(self):
@@ -205,6 +259,7 @@ class Keithley2611(Sourcemeter):
 
     def Reset(self):
         self.handle.write('smua.reset()')
+        self.Config()
 
     def OutputFn(self, func):
         cmd = 'smua.source.func = {0}'
@@ -227,20 +282,7 @@ class Keithley2611(Sourcemeter):
             cmd = cmd.format('smua.AUTORANGE_OFF')
         self.handle.write(cmd)
 
-    def Beep(self, notes):
-        #Beep takes a list of tuples where each tuple consists of
-        #two elements (duration in seconds, frequency in hertz)
-        #so pass in something like [(0.5, 200), (0.25, 450), ... ]
-        cmd = 'beeper.beep({0}, {1})'
-        try: 
-            for note in notes:
-                duration, freq = note
-                beepcmd = cmd.format(duration, freq)
-                self.handle.write(beepcmd)
-        except Exception as e:
-            print 'Beeper failed to work.'
-
-        
+      
     def SetCurrentLimit(self, current):
         cmd = 'smua.source.limiti = {0}'
         try:
@@ -259,48 +301,65 @@ class Keithley2611(Sourcemeter):
         except ValueError as e:
             print 'bad voltage in voltageLimit'
 
+    def SetRepeatAverage(self,samples):
+        if samples<=1:
+            self.handle.write('smua.measure.filter.enable = smua.FILTER_OFF')
+            return
+        self.handle.write('smua.measure.filter.count = {0}'.format(samples))
+        self.handle.write('smua.measure.filter.type = smua.FILTER_REPEAT_AVG')
+	self.handle.write('smua.measure.filter.enable = smua.FILTER_ON')
+
+    def SetSourceDelay(self,delay):
+        self.handle.write('smua.source.delay = {0}'.format(delay))
+
+            
+    def SetNPLC(self,nplc=3):
+        self.handle.write('smua.measure.nplc = {0}'.format(nplc))
+            
     def Model(self):
         identity = self.handle.ask("*IDN?")
         return identity
-
-    def ReadVIPoint(self,v=None):
-        if v != None:
-            self.SetVoltage(v) # otherwise use last set voltage
-            #set to 1 measurement
-            self.handle.write('smua.measure.count = 1')
-            self.EnableOutput()
-            self.handle.write('print(smua.measure.i())')
-            measure = self.handle.read()
-            print 'i-v measure: {0}'.format(measure)
-            self.DisableOutput()
-            return measure
 
     def SetVoltage(self, v):
         cmd = 'smua.source.levelv = {0}'
         try:
             voltage = float(v)
-            if (voltage < self.Vmin):
-                voltage = self.Vmin
-            elif (voltage > self.Vmax):
-                voltage = self.Vmax
             cmd = cmd.format(voltage)
             self.handle.write(cmd)
         except ValueError as e:
             print 'bad voltage in Set Voltage'
-
-
     
-    def Connect(self):
-        self.DisableOutput()
-        self.OutputFn('voltage')
-        self.SetVoltageLimit(-80)
-        self.SetCurrentLimit(self.ilimit)
-        self.Autorange(1)
+    def ReadVIPoint(self,v=None):
+        if v != None:
+            self.SetVoltage(v) # otherwise use last set voltage
+            #set to 1 measurement
+        self.handle.write('smua.measure.count = 1')
         self.EnableOutput()
-        self.handle.timeout = 2000000
+        self.handle.write('print(smua.measure.i())')
+        measure = self.handle.read()
+        #print 'i-v measure: {0}'.format(measure)
+        #self.DisableOutput()
+        return measure
 
+    def Discharge(self, n=10):
+        print "Discharging cycle, measurements =",n
+        self.SetVoltage(0)
+        self.EnableOutput()
+        for i in range(n):
+            self.handle.write('print(smua.measure.i())')
+            measure = self.handle.read()
+            sys.stdout.write(str(i%10))
+            sys.stdout.flush()
+            time.sleep(1)
+        print ""
+        self.DisableOutput()
+        self.ClearBuffer()
 
+  
     def MeasureIV(self):
+        self.Beep([(0.5,200)])
+        self.Discharge(self.discharge0) 
+        self.handle.write('smua.measure.autozero = 1')        
         self.handle.write('mylist = {}')
 
         length = len(self.volts)
@@ -310,13 +369,37 @@ class Keithley2611(Sourcemeter):
 
         self.handle.write('SweepVListMeasureI(smua, mylist, 1,'+str(length)+')')
 
-        print length
-        self.handle.write('opc()')
+        self.handle.timeout = 20000
+        time.sleep(0.25)
+        opcValue = '0'
+        
+        print 'recvd %s' % opcValue
+    	print 'waiting for opc'
+   	while (opcValue.find('1') == -1):
+            print "ask OPC"
+            try:
+                opcValue = self.handle.ask('*OPC?')
+                print 'opc value recvd %s' % opcValue
+                time.sleep(10)
+	    except vxi11.vxi11.Vxi11Exception as e:
+	        print 'timeout? {0}'.format(e)
+                continue
 
-        for i in range(length):
-            num = self.handle.ask('print(smua.nvbuffer1.readings['+str(i+1)+']')
-            self.current.append(num)
+        self.ClearBuffer()
+        
+        self.handle.write('printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.readings)')
+        lastMeasure = self.handle.read()
+        self.current = lastMeasure.strip().split(',')
+        self.Discharge(self.discharge1)
+        self.Beep([(0.5,400)])
 
+        
+#        for i in range(length):
+#            num = self.handle.ask('print(smua.nvbuffer1.readings['+str(i+1)+']')
+#            self.current.append(num)
+
+
+            
 class Keithley2450(Sourcemeter):
     def __init__(self, host, port):
         Sourcemeter.__init__(self, host, port)
@@ -519,6 +602,7 @@ class Keithley2450(Sourcemeter):
             self.handle.write('smu.source.configlist.store("VoltListSweep")')
         self.handle.write('smu.source.sweeplist("VoltListSweep",1)')
         self.handle.write('trigger.model.initiate()')
+        
         #self.handle.write('waitcomplete()')
         self.handle.timeout = 20000
         time.sleep(0.25)

@@ -56,7 +56,11 @@ Ilimit = args.limit
 ft232Controller = FT232H('spi')
 
 # first configure the sourcemeter
-s = Keithley2450(host, port)
+if args.k2611a:
+    s = Keithley2611("128.143.196.249", port)
+else:
+    s = Keithley2450(host, port)
+
 s.Reset()
 #s.Config() # not needed, done by Reset()
 if args.limit>0: s.SetCurrentLimit(args.limit)
