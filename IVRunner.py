@@ -56,7 +56,7 @@ Ilimit = args.limit
 ft232Controller = FT232H('spi')
 
 # first configure the sourcemeter
-if args.k2611a:
+if args.k2611:
     s = Keithley2611("128.143.196.249", port)
 else:
     s = Keithley2450(host, port)

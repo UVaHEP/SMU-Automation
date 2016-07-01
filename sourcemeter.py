@@ -108,8 +108,8 @@ class Sourcemeter:
                 values = line.split(',')
                 if len(values) > 4:
                     self.volts.append(values[3])
-                if not volts == []:        
-                    del volts[0]
+            if not self.volts == []:        
+                del self.volts[0]
         elif self.volts == []:
             for line in f:
                 splitSpace =[]
@@ -601,6 +601,8 @@ class Keithley2450(Sourcemeter):
             self.handle.write(line)
             self.handle.write('smu.source.configlist.store("VoltListSweep")')
         self.handle.write('smu.source.sweeplist("VoltListSweep",1)')
+        self.handle.write('trigger.model.setblock(6, trigger.BLOCK_NOP)\n')
+        self.handle.write('trigger.model.setblock(10, trigger.BLOCK_BRANCH_ALWAYS, 11)\n')
         self.handle.write('trigger.model.initiate()')
         
         #self.handle.write('waitcomplete()')
@@ -626,3 +628,7 @@ class Keithley2450(Sourcemeter):
         self.current = lastMeasure.strip().split(',')
         self.Discharge(self.discharge1)
         self.Beep([(0.5,400)])
+
+
+        
+    
