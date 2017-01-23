@@ -21,7 +21,7 @@ parser.add_argument('-f', '--file', type=str, nargs='?', default=None,
 parser.add_argument('-R','--reverse', action='store_true',
                     help="Takes default reverse bias curve if no data file")
 parser.add_argument('-D','--device', type=str, nargs='?', default="noname",
-                    help="Device identifier")
+                    help="Device identifier, append _fast for fast collection mode")
 parser.add_argument('-F','--forward', action='store_true',
                     help="Takes default forward bias I-V curve if no data file")
 parser.add_argument('-H','--hysteresis', action='store_true', default=False,
@@ -31,7 +31,7 @@ parser.add_argument('-l', '--limit', type=float, default = 0.01,
 parser.add_argument('-s', '--numsteps', type=int, default=100,
                     help="The number of steps in the staircase sweep [100]")
 parser.add_argument('-S', '--stepsize', type=float, default=None,
-                    help="Step size for the staircase sweep [None]")
+                    help="Step size for the staircase sweep in units of volts [None]")
 parser.add_argument('-m', '--min', type=float, default=0.0,
                     help="Voltage at which to start staircase sweep")
 parser.add_argument('-x', '--max', type=float, default= -60.0,
@@ -45,7 +45,9 @@ parser.add_argument('-c', '--channel', type=int, nargs ='*',
 parser.add_argument('-A', '--all', action='store_true',
                     help="Take I-V curve for all channels")
 parser.add_argument('-i', '--iLED', type=int, nargs = '?', default=None,
-                    help="Specifies intensity of LEDs")
+                    help="Specifies intensity of LEDs, range is integers 0-4095")
+parser.add_argument('-B','--BackTerm', action='store_true',
+                    help="Use rear terminals on SMU (model 2450 only, for now)")
 
 args = parser.parse_args()
 #host = '128.143.196.77'
@@ -62,6 +64,9 @@ else:
     s = Keithley2450(host, port)
 
 s.Reset()
+
+if args.BackTerm: s.UseRearTerm()
+
 #s.Config() # not needed, done by Reset()
 if args.limit>0: s.SetCurrentLimit(args.limit)
 
@@ -121,7 +126,7 @@ if "fast" in args.device:
     print "Using 10ms source delay for faster scan" 
     s.SetSourceDelay(0.01)      # 10 ms source delay
     s.SetDischargeCycles(3,3)   # just do 3 cycles before/after measurement 
-    s.SetNPLC(1)
+    s.SetNPLC(3)
 
     
 for channel in args.channel:

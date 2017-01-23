@@ -415,9 +415,10 @@ class Keithley2450(Sourcemeter):
         self.SetVoltageLimit(-80) # need to improve for Fwd protection
         self.SetCurrentLimit(self.ilimit)
         self.Autorange(1)
-        self.SetNPLC(3)
-        #self.handle.write('smu.source.autodelay = smu.ON')
-        #self.handle.write('trigger.model.abort()')
+
+    def UseRearTerm(self):
+        self.handle.write('smu.measure.terminals=smu.TERMINALS_REAR')
+
         
     def __del__(self):
         #self.handle.write('*RST')
@@ -598,6 +599,7 @@ class Keithley2450(Sourcemeter):
         self.handle.write('smu.source.configlist.create("VoltListSweep")')
         for volt in self.volts:
             line = 'smu.source.level = {0}'.format(volt)
+            #print line
             self.handle.write(line)
             self.handle.write('smu.source.configlist.store("VoltListSweep")')
         self.handle.write('smu.source.sweeplist("VoltListSweep",1)')
