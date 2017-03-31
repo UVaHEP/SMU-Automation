@@ -120,6 +120,28 @@ else: args.iLED=0
 now = datetime.now()
 tstamp=now.strftime("-%Y%m%d-%H:%M")
 
+
+### Scan for potentially working channels
+def detectGoodChannels(controller, chLst, LEDValue):
+    ## First get a list of dark currents at 0 and -1 Volts
+    data = []
+    for channel in chLst:
+        controller.ClearChannel()
+        controller.ActivateChannel(channel)
+        datum = [channel, s.ReadVIPoint(0), s.ReadVIPoint(-1)]
+        darkCh.append(dark)
+        controller.SetLight(LEDValue)
+        datum.append(s.ReadVIPoint(0))
+        data.append(datum)
+        s.DisableOutput()
+
+    print 'Ch, Dark(0) V, Dark(-1 )V, Light {0}'.format(LEDValue)
+    for datum in data:
+        print '{0}: {1}, {2}, {3}'.format(datum[0], datum[1], datum[2], datum[3])
+
+
+
+
 # hack: if string "fast" is included in the device name, then update the
 # default SMU settings
 if "fast" in args.device:

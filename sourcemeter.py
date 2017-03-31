@@ -632,5 +632,5 @@ class Keithley2450(Sourcemeter):
         self.Beep([(0.5,400)])
 
 
-        
+
     
