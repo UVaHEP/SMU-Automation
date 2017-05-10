@@ -10,6 +10,8 @@ from datetime import datetime
 
 parser = argparse.ArgumentParser(description='Takes I-V Curves')
 
+parser.add_argument('--script', type=str, nargs='?', default="",
+                    help='Script to upload and run')
 parser.add_argument('-a','--agilent', action='store_true',
                     help="Use Agilent SMU to take the I-V curve")
 parser.add_argument('-k','--k2611', action='store_true',
@@ -50,6 +52,22 @@ parser.add_argument('-B','--BackTerm', action='store_true',
                     help="Use rear terminals on SMU (model 2450 only, for now)")
 
 args = parser.parse_args()
+
+luaScript = None 
+if args.script != "":
+    try:
+        f = open(args.script)
+        luaScript = f.readlines()
+        f.close()
+        print 'Using the following luascript \n------------------------'
+        for line in luaScript:
+            print line.strip()
+    except Exception as e:
+        print e
+        exit()
+
+
+
 #host = '128.143.196.77'
 host = '192.168.0.2'
 port = 23
@@ -119,6 +137,14 @@ else: args.iLED=0
 # stamp all files with starting time of this script
 now = datetime.now()
 tstamp=now.strftime("-%Y%m%d-%H:%M")
+
+if luaScript:
+    print 'Uploading script from: {0}'.format(args.script)
+    s.uploadScript('anArg', luaScript)
+    s.runScript('IVRunner', [0, -72, -0.05])
+
+    exit()
+
 
 # hack: if string "fast" is included in the device name, then update the
 # default SMU settings
