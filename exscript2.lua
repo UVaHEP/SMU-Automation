@@ -31,7 +31,7 @@ function IVRunner(start, stop, step)
    display.settext("Done")
    print('Done')
    print('Done')
-
+   --Why do I need two Done statements!?@?!
 
 end
 
