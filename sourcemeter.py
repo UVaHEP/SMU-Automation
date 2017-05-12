@@ -127,6 +127,22 @@ class Sourcemeter:
         print 'doing list sweep'
         pass
 
+    def uploadScript(self, scriptName, script):
+        #Upload a user script to a Keithley sourcemeter
+        print 'Uploading {0}'.format(scriptName)
+        try:
+            #First remove the script from the runtime environment
+#            self.handle.write('{0} = nil\n'.format(scriptName))
+            self.handle.write('loadscript {0}\n'.format(scriptName))
+            for l in script:
+                self.handle.write(l)
+            self.handle.write('endscript')
+            
+        except Exception as e:
+            print 'Failed: {0}'.format(e)
+
+
+    
     # dump the IV curve data to the screen and optionally a file
     def WriteData(self, output=""):
         if output != "":
@@ -393,6 +409,47 @@ class Keithley2611(Sourcemeter):
         self.Discharge(self.discharge1)
         self.Beep([(0.5,400)])
 
+    def runScript(self, scriptName, args):
+
+
+        sargs = ','.join(map(lambda x: '\"{0}\"'.format(x), args))
+#        sargs = []
+#        for i in range(0, len(args)):
+#            sargs.append('a{0}=\"{1}\"'.format(i, args[i]))
+        print sargs
+        rline = '{0}({1})'.format(scriptName, sargs)
+#        rline = '{0}'.format(scriptName)
+        
+        for arg in sargs:
+            print arg
+            self.handle.write(arg)
+
+        print 'Running: {0}'.format(rline)
+        self.handle.write(rline)
+
+        self.handle.timeout = 20000
+        time.sleep(0.25)
+        
+        l = self.handle.read()
+        while l.find('Done') == -1:
+            try:
+                print l
+                l = self.handle.read()
+            except vxi11.vxi11.Vxi11Exception as e:
+                print 'exception {0}'.format(e)
+                break
+
+        self.handle.write('printbuffer(1, smua.nvbuffer1.n, smua.nvbuffer1.readings)')
+        lastMeasure = self.handle.read()
+        self.current = lastMeasure.strip().split(',')
+        time.sleep(0.25)
+        self.handle.write('printbuffer(1,smua.nvbuffer2.n,smua.nvbuffer2.readings)')
+        volts = self.handle.read()
+        self.volts = volts.strip().split(',')
+        
+        self.Discharge(self.discharge0)
+        self.Beep([(0.5, 400)])
+        self.WriteData()
         
 #        for i in range(length):
 #            num = self.handle.ask('print(smua.nvbuffer1.readings['+str(i+1)+']')
@@ -577,6 +634,39 @@ class Keithley2450(Sourcemeter):
         #self.DisableOutput()
         return measure
 
+    def runScript(self, scriptName, args):
+
+
+        sargs = ','.join(map(lambda x: '\"{0}\"'.format(x), args))
+        rline = '{0}({1})'.format(scriptName, sargs)
+        print 'Running: {0}'.format(rline)
+        self.handle.write(rline)
+
+        self.handle.timeout = 20000
+        time.sleep(0.25)
+        
+        l = self.handle.read()
+        while l.find('Done') == -1:
+            try:
+                print l
+                l = self.handle.read()
+            except vxi11.vxi11.Vxi11Exception as e:
+                print 'exception {0}'.format(e)
+                break
+
+        self.handle.write('printbuffer(1, smua.nvbuffer1.n, smua.nvbuffer1.readings)')
+        lastMeasure = self.handle.read()
+        self.current = lastMeasure.strip().split(',')
+        time.sleep(0.25)
+        self.handle.write('printbuffer(1,smua.nvbuffer2.n,smua.nvbuffer2.readings)')
+        volts = self.handle.read()
+        self.volts = volts.strip().split(',')
+        
+        self.Discharge(self.discharge0)
+        self.Beep([(0.5, 400)])
+        self.WriteData()
+
+    
     def Discharge(self, n=10):
         print "Discharging cycle, measurements =",n
         self.SetVoltage(0)
