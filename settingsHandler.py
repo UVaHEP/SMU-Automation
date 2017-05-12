@@ -128,7 +128,7 @@ def processArgs(args, settings):
     if not args.host and settings['host'] == None:
         print 'I need a host to connect to, use --host or add it to a config file'
         exit()
-    else:
+    elif args.host:
         settings['host'] = args.host
 
     if args.port:

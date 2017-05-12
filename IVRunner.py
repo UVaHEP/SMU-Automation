@@ -50,9 +50,9 @@ if settings['script']:
         f = open(settings['script'])
         luaScript = f.readlines()
         f.close()
-        print 'Using the following luascript \n------------------------'
-        for line in luaScript:
-            print line.strip()
+#        print 'Using the following luascript \n------------------------'
+#        for line in luaScript:
+#            print line.strip()
     except Exception as e:
         print 'Failed to load script: {0}'.format(e)
         exit()
@@ -61,7 +61,7 @@ if settings['script']:
 ft232Controller = FT232H('spi')
 
 # first configure the sourcemeter
-host = '128.143.196.249' #settings['host']
+host = settings['host']
 port = settings['port']
 print settings['model']
 print 'Connecting to {0}:{1}'.format(host, port)
@@ -87,30 +87,40 @@ ft232Controller = None
 time.sleep(0.25)
 ft232Controller = FT232H('spi')
 
+if settings['backterm']:
+    s.UseRearTerm()
+
 
 if luaScript:
     print 'Uploading script from: {0}'.format(settings['script'])
-    s.uploadScript('IVRunner', luaScript)
-    s.handle.write('IVRunner.run()')
+    s.handle.write('script.delete("{0}")'.format('IVRunnerScript'))
+    s.uploadScript('IVRunnerScript', luaScript)
+    s.handle.write('IVRunnerScript.run()')
     time.sleep(0.25)
     s.SetSourceDelay(0.1)
 
+    
+    
     s.SetNPLC(3)
     start = settings['min']
     end = settings['max']
     step = settings['stepSize']
 
     for channel in args.channel:
+
+        lockfile=open("lock",'w+')
+        ft232Controller.ClearChannel()
+        ft232Controller.ActivateChannel(channel)
         s.Discharge(3)
         s.EnableOutput()
-        lockfile=open("lock",'w+')
+                
         print "++++++++++++++++++++++++++++++++++++++++"
         print "Doing I-V scan for pin #{0}, start: {1}, end: {2}, step: {3}".format(channel,start , end, step)
         
         cmd = 'IVRunner({0}, {1}, {2})'.format(start, end, step)
         s.handle.write(cmd)
 
-        s.handle.timeout = 0.5
+        s.handle.timeout = 2
         time.sleep(0.25)
         l = s.handle.read()
         while l.find('Done') == -1:
@@ -123,11 +133,13 @@ if luaScript:
 
     s.DisableOutput()
     s.handle.clear()
-    s.handle.write('printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.readings)')
+    s.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.readings)')
     lastMeasure = s.handle.read()
     i = lastMeasure.strip().split(',')
+    print i
     s.handle.clear()
-    s.handle.write('printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.sourcevalues)')
+    s.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.sourcevalues)')
+#    s.handle.write('printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.sourcevalues)')
     lastMeasure = s.handle.read()
     v = lastMeasure.strip().split(',')
     map(lambda x,y: sys.stdout.write('{0}:{1}\n'.format(x,y)), v, i)
