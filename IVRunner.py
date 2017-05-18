@@ -1,68 +1,79 @@
 #!/usr/bin/python
 
-import argparse
 import vxi11
 import time,os
 from sourcemeter import *
 from FT232H import *
 from datetime import datetime
+from settingsHandler import *
+
+import signal,sys
 
 
-parser = argparse.ArgumentParser(description='Takes I-V Curves')
+# Register signal handler to do cleanup on ctrl-C.
+def signal_handler(signal, frame):
+    print
+    print 'signal_handler: received ctrl-C indicating user wants run stopped'
+    global run
+    run=0
+    sys.exit(1)
+run = 1
+signal.signal(signal.SIGINT,signal_handler)
 
-parser.add_argument('-a','--agilent', action='store_true',
-                    help="Use Agilent SMU to take the I-V curve")
-parser.add_argument('-k','--k2611', action='store_true',
-                    help="Use Keithley 2611 to take the I-V curve")
-parser.add_argument('-K','--k2450', action='store_true',
-                    help="Use Keithley 2450 to take I-V curve")
-parser.add_argument('-f', '--file', type=str, nargs='?', default=None,
-                    help="Input data file that activates list sweep")
-parser.add_argument('-R','--reverse', action='store_true',
-                    help="Takes default reverse bias curve if no data file")
-parser.add_argument('-D','--device', type=str, nargs='?', default="noname",
-                    help="Device identifier, append _fast for fast collection mode")
-parser.add_argument('-F','--forward', action='store_true',
-                    help="Takes default forward bias I-V curve if no data file")
-parser.add_argument('-H','--hysteresis', action='store_true', default=False,
-                    help="Repeat I-V measurement in reverse for hysteresis curve")
-parser.add_argument('-l', '--limit', type=float, default = 0.01,
-                    help="The current limit [0.01]")
-parser.add_argument('-s', '--numsteps', type=int, default=100,
-                    help="The number of steps in the staircase sweep [100]")
-parser.add_argument('-S', '--stepsize', type=float, default=None,
-                    help="Step size for the staircase sweep in units of volts [None]")
-parser.add_argument('-m', '--min', type=float, default=0.0,
-                    help="Voltage at which to start staircase sweep")
-parser.add_argument('-x', '--max', type=float, default= -60.0,
-                    help="Voltage at which to stop staircase sweep")
-parser.add_argument('-o', '--output', type=str, nargs='?', default="",
-                    help="Output file for data")
-parser.add_argument('-g', '--graph', action='store_true',
-                    help='Prints the I-V curve graph to the screen')
-parser.add_argument('-c', '--channel', type=int, nargs ='*',
-                    help="Take I-V curves at specified channels")
-parser.add_argument('-A', '--all', action='store_true',
-                    help="Take I-V curve for all channels")
-parser.add_argument('-i', '--iLED', type=int, nargs = '?', default=None,
-                    help="Specifies intensity of LEDs, range is integers 0-4095")
-parser.add_argument('-B','--BackTerm', action='store_true',
-                    help="Use rear terminals on SMU (model 2450 only, for now)")
 
+parser = buildParser()
 args = parser.parse_args()
-#host = '128.143.196.77'
-host = '192.168.0.2'
-port = 23
-Ilimit = args.limit
+settings = {}
+
+if args.config:
+    settings = loadSettings(args.config)
+    if not settings:
+        print 'Failed to load settings from {0}'.format(args.config)
+        exit()
+else:
+    settings =  {'script':None, 'host':None, 'port':23}
+
+
+settings = processArgs(args, settings)
+
+
+    
+
+
+
+
+
+
+luaScript = None 
+if settings['script']: 
+    try:
+        f = open(settings['script'])
+        luaScript = f.readlines()
+        f.close()
+#        print 'Using the following luascript \n------------------------'
+#        for line in luaScript:
+#            print line.strip()
+    except Exception as e:
+        print 'Failed to load script: {0}'.format(e)
+        exit()
+
 
 ft232Controller = FT232H('spi')
 
 # first configure the sourcemeter
-if args.k2611:
-    s = Keithley2611("128.143.196.249", port)
-else:
+host = settings['host']
+port = settings['port']
+print settings['model']
+print 'Connecting to {0}:{1}'.format(host, port)
+if 'k2611' in settings['model']:
+    s = Keithley2611(host, port)
+elif 'k2450' in settings['model']:
     s = Keithley2450(host, port)
+else:
+    print 'non supported model, {0}'.format(settings['model'])
+    exit()
 
+print 'Resetting'
 s.Reset()
 
 if args.BackTerm: s.UseRearTerm()
@@ -70,55 +81,113 @@ if args.BackTerm: s.UseRearTerm()
 #s.Config() # not needed, done by Reset()
 if args.limit>0: s.SetCurrentLimit(args.limit)
 
-vEnd = args.max
-if args.forward:
-    vStart = "FwdIVdefault"
-elif args.reverse:
-    vStart = "RevIVdefault"
-elif args.file != None:
-    vStart = args.file
-else:
-    vStart = args.min
-    vEnd = args.max
-    nsteps = args.numsteps
-    print "vStart, vEnd",vStart,vEnd
-    if args.stepsize == None: deltaV=0
-    else: deltaV = abs(args.stepsize)   # overrides num steps
-    if deltaV>0:
-        print "Maximum step is",deltaV,"Volts"
-    else:
-        print "Using",nsteps,"voltage steps"
-    
-if args.stepsize == None:
-    s.SetVsteps(vStart, vEnd, args.numsteps)   # define voltage steps
-else:
-    s.SetVsteps(vStart, vEnd, 0, deltaV)
+ft232Controller.SetLight(settings['led'])
+ft232Controller.Persist()
+ft232Controller = None
+time.sleep(0.25)
+ft232Controller = FT232H('spi')
 
-if args.hysteresis: s.AddHysteresis()
+if settings['backterm']:
+    s.UseRearTerm()
 
-
-if args.all:
-    args.channel = range(1,11)
-channels = str(args.channel).strip('[]')
-print 'The following channels will be used: '+channels
-if args.channel == None:
-    args.channel = [-1]
-    print args.channel
-
-# set the LED
-if args.iLED != None:
-    print "Light curves will use LED value",args.iLED
-    ft232Controller.SetLight(args.iLED) #turn on LEDs
-    ft232Controller.Persist()
-    ft232Controller = None
-    time.sleep(0.25)
-    ft232Controller = FT232H('spi')
-    
-else: args.iLED=0
-    
+vSteps = None
+if settings['voltageSteps']:
+    try:
+        vf = open(settings['voltageSteps'])
+        vSteps = vf.readline().strip().split(',')  #map(float, vf.readline().split(','))
+#        print vSteps
+    except Exception as e:
+        print 'Failed to load voltage steps from: {0}'.format(settings['voltageSteps'])
+        print 'Reason: {0}'.format(e)
+        
 # stamp all files with starting time of this script
 now = datetime.now()
 tstamp=now.strftime("-%Y%m%d-%H:%M")
+
+    
+if luaScript:
+    print 'Uploading script from: {0}'.format(settings['script'])
+    s.handle.write('script.delete("{0}")'.format('IVRunnerScript'))
+    s.uploadScript('IVRunnerScript', luaScript)
+    s.handle.write('IVRunnerScript.run()')
+    time.sleep(0.25)
+
+    s.SetSourceDelay(0.1)
+    s.SetNPLC(3)
+
+        
+    
+    
+    start = settings['min']
+    end = settings['max']
+    step = settings['stepSize']
+
+    for channel in args.channel:
+
+        lockfile=open("lock",'w+')
+        ft232Controller.ClearChannel()
+        ft232Controller.ActivateChannel(channel)
+        s.Discharge(3)
+        s.EnableOutput()
+                
+        if vSteps:
+            print 'Running IVRunnerList with steps from {0}'.format(settings['voltageSteps'])
+            lstBuilderCmd = 'vList = {}'
+            s.handle.write(lstBuilderCmd)
+            cmd = 'vList[{0}] = {1}'
+            for i in range (1, len(vSteps)+1):
+                s.handle.write(cmd.format(i, vSteps[i-1]))
+            
+            cmd = 'IVRunnerList({0})'.format('vList')
+            s.handle.write(cmd)
+        else:
+            print "++++++++++++++++++++++++++++++++++++++++"
+            print "Doing I-V scan for pin #{0}, start: {1}, end: {2}, step: {3}".format(channel,start , end, step)
+            cmd = 'IVRunner({0}, {1}, {2})'.format(start, end, step)
+            s.handle.write(cmd)
+
+        time.sleep(0.25)
+        s.handle.timeout = 2
+        l = s.handle.read()
+        while l.find('Done') == -1:
+            try:
+                print l
+                l = s.handle.read()
+            except vxi11.vxi11.Vxi11Exception as e:
+                print 'exception {0}'.format(e)
+                break
+
+    s.DisableOutput()
+    s.handle.clear()
+    s.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.readings)')
+    lastMeasure = s.handle.read()
+    i = lastMeasure.strip().split(',')
+    print i
+    s.handle.clear()
+    s.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.sourcevalues)')
+#    s.handle.write('printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.sourcevalues)')
+    lastMeasure = s.handle.read()
+    v = lastMeasure.strip().split(',')
+    
+#    map(lambda x,y: sys.stdout.write('{0}:{1}\n'.format(x,y)), v, i)
+    s.Discharge(3)
+
+    outfile = None
+    if settings['output']:
+        outfile = settings['output']
+    else:
+        outfile = '{0}_Ch{1}_iLED{2}_{3}.csv'.format(settings['device'], channel, settings['led'], tstamp)
+
+
+    print "Outputfile:",outfile
+    lockfile.write("Outfile= "+outfile+"\n")
+    lockfile.flush()
+    f = open(outfile,'w+')
+    map(lambda x,y: f.write('{0},{1}\n'.format(x,y)), v,i)
+    
+    s.Beep([(0.5,400)])
+    exit()
+
 
 
 ### Scan for potentially working channels
