@@ -26,7 +26,7 @@ def buildParser():
     ##### General Arguments #####
     parser.add_argument('-f', '--file', type=str, nargs='?', default=None,
                         help="Input data file that activates list sweep")
-    parser.add_argument('-D','--device', type=str, nargs='?', default="noname",
+    parser.add_argument('-D','--device', type=str, nargs='?', default=None,
                         help="Device identifier, append _fast for fast collection mode")
     parser.add_argument('-o', '--output', type=str, nargs='?', default="",
                         help="Output file for data")
@@ -83,8 +83,10 @@ def loadSettings(filename):
         settings['currentLimit'] = c.getfloat(section, 'ilimit')
         settings['backterm'] = c.getboolean(section, 'backterm')
         settings['autorange'] = c.getboolean(section, 'autorange')
-
-
+        settings['device'] = c.get(section, 'device')
+        settings['voltageSteps'] = c.get(section, 'voltageSteps')
+        if settings['voltageSteps'] == 'None':
+            settings['voltageSteps'] = None 
 
         try:
             settings['script'] = c.get(section, 'programfile')
@@ -150,6 +152,17 @@ def processArgs(args, settings):
     if args.stepsize:
         settings['stepSize'] = args.stepsize
 
+    if args.file:
+        settings['voltageSteps'] = args.file
+
+    if args.output:
+        settings['output'] = args.output
+    else:
+        settings['output'] = None
+
+    if args.device:
+        settings['device'] = args.device
+    
     if settings['max'] < settings['min'] and settings['stepSize'] > 0:
         #invert stepSize if we're going to negative values
         settings['stepSize'] = settings['stepSize']*-1

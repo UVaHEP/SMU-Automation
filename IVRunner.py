@@ -90,18 +90,34 @@ ft232Controller = FT232H('spi')
 if settings['backterm']:
     s.UseRearTerm()
 
+vSteps = None
+if settings['voltageSteps']:
+    try:
+        vf = open(settings['voltageSteps'])
+        vSteps = vf.readline().strip().split(',')  #map(float, vf.readline().split(','))
+#        print vSteps
+    except Exception as e:
+        print 'Failed to load voltage steps from: {0}'.format(settings['voltageSteps'])
+        print 'Reason: {0}'.format(e)
+        
+# stamp all files with starting time of this script
+now = datetime.now()
+tstamp=now.strftime("-%Y%m%d-%H:%M")
 
+    
 if luaScript:
     print 'Uploading script from: {0}'.format(settings['script'])
     s.handle.write('script.delete("{0}")'.format('IVRunnerScript'))
     s.uploadScript('IVRunnerScript', luaScript)
     s.handle.write('IVRunnerScript.run()')
     time.sleep(0.25)
-    s.SetSourceDelay(0.1)
 
-    
-    
+    s.SetSourceDelay(0.1)
     s.SetNPLC(3)
+
+        
+    
+    
     start = settings['min']
     end = settings['max']
     step = settings['stepSize']
@@ -114,14 +130,24 @@ if luaScript:
         s.Discharge(3)
         s.EnableOutput()
                 
-        print "++++++++++++++++++++++++++++++++++++++++"
-        print "Doing I-V scan for pin #{0}, start: {1}, end: {2}, step: {3}".format(channel,start , end, step)
-        
-        cmd = 'IVRunner({0}, {1}, {2})'.format(start, end, step)
-        s.handle.write(cmd)
+        if vSteps:
+            print 'Running IVRunnerList with steps from {0}'.format(settings['voltageSteps'])
+            lstBuilderCmd = 'vList = {}'
+            s.handle.write(lstBuilderCmd)
+            cmd = 'vList[{0}] = {1}'
+            for i in range (1, len(vSteps)+1):
+                s.handle.write(cmd.format(i, vSteps[i-1]))
+            
+            cmd = 'IVRunnerList({0})'.format('vList')
+            s.handle.write(cmd)
+        else:
+            print "++++++++++++++++++++++++++++++++++++++++"
+            print "Doing I-V scan for pin #{0}, start: {1}, end: {2}, step: {3}".format(channel,start , end, step)
+            cmd = 'IVRunner({0}, {1}, {2})'.format(start, end, step)
+            s.handle.write(cmd)
 
-        s.handle.timeout = 2
         time.sleep(0.25)
+        s.handle.timeout = 2
         l = s.handle.read()
         while l.find('Done') == -1:
             try:
@@ -142,8 +168,23 @@ if luaScript:
 #    s.handle.write('printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.sourcevalues)')
     lastMeasure = s.handle.read()
     v = lastMeasure.strip().split(',')
-    map(lambda x,y: sys.stdout.write('{0}:{1}\n'.format(x,y)), v, i)
+    
+#    map(lambda x,y: sys.stdout.write('{0}:{1}\n'.format(x,y)), v, i)
     s.Discharge(3)
+
+    outfile = None
+    if settings['output']:
+        outfile = settings['output']
+    else:
+        outfile = '{0}_Ch{1}_iLED{2}_{3}.csv'.format(settings['device'], channel, settings['led'], tstamp)
+
+
+    print "Outputfile:",outfile
+    lockfile.write("Outfile= "+outfile+"\n")
+    lockfile.flush()
+    f = open(outfile,'w+')
+    map(lambda x,y: f.write('{0},{1}\n'.format(x,y)), v,i)
+    
     s.Beep([(0.5,400)])
     exit()
 
