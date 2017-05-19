@@ -121,11 +121,6 @@ def processArgs(args, settings):
 
     if args.limit:
         settings['currentLimit'] = args.limit
-    else:
-        # use default current limit
-        settings['currentLimit'] = 0.01
-
-
         
     if not args.host and settings['host'] == None:
         print 'I need a host to connect to, use --host or add it to a config file'
