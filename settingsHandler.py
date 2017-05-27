@@ -67,7 +67,8 @@ def buildParser():
 
 
 def loadSettings(filename):
-    settings = {'script':None, 'host':None, 'port':23, 'model':None}
+    settings = {'script':None, 'host':None, 'port':23, 'model':None,
+                'voltageSteps':None}
 
     
     print 'Trying to use {0} for Configuration file'.format(filename)
@@ -118,7 +119,7 @@ def loadSettings(filename):
 
 
 def processArgs(args, settings):
-
+    settings['voltageSteps'] = None
     if args.limit:
         settings['currentLimit'] = args.limit
         
@@ -137,8 +138,10 @@ def processArgs(args, settings):
     elif args.k2450:
         settings['model'] = 'k2450'
 
-
-    if args.min:
+    if args.BackTerm:
+        settings['backterm'] = True
+        
+    if args.min is not None:
         settings['min'] = args.min
 
     if args.max:
@@ -158,16 +161,18 @@ def processArgs(args, settings):
     if args.device:
         settings['device'] = args.device
     
-    if settings['max'] < settings['min'] and settings['stepSize'] > 0:
+    #if settings['max'] < settings['min'] and settings['stepSize'] > 0:
         #invert stepSize if we're going to negative values
-        settings['stepSize'] = settings['stepSize']*-1
+       # settings['stepSize'] = settings['stepSize']*-1
     
 
     if args.iLED:
         settings['led'] = args.iLED
     elif not settings['script']:
         settings['led'] = 0
-        
+
+
+
     
 
         

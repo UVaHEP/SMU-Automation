@@ -102,7 +102,7 @@ if settings['voltageSteps']:
         
 # stamp all files with starting time of this script
 now = datetime.now()
-tstamp=now.strftime("-%Y%m%d-%H:%M")
+tstamp=now.strftime("%Y%m%d-%H%M")
 
     
 if luaScript:
@@ -202,7 +202,7 @@ if luaScript:
         if settings['output']:
             outfile = settings['output']
         else:
-            outfile = '{0}_Ch{1}_iLED{2}_{3}.csv'.format(settings['device'], channel, settings['led'], tstamp)
+            outfile = '{0}_Ch{1}_iLED{2}-{3}.csv'.format(settings['device'], channel, settings['led'], tstamp)
 
         if not skip:
             print 'i:{0}, v:{1}'.format(i, v)
@@ -231,6 +231,7 @@ if "fast" in args.device:
 
     
 for channel in args.channel:
+    s.SetVsteps(settings['min'], settings['max'], 0, settings['stepSize'])
     lockfile=open("lock",'w+')
     print "++++++++++++++++++++++++++++++++++++++++"
     print "Doing I-V scan for pin #",channel
@@ -238,7 +239,7 @@ for channel in args.channel:
     if channel<0: ch="00"
     else: ch="%02d" % channel
     if args.output=="":
-        outfile=args.device+'_Ch'+ch+'_iLED'+str(args.iLED)+tstamp+'.csv'
+        outfile=args.device+'_Ch'+ch+'_iLED-'+str(args.iLED)+tstamp+'.csv'
     else: outfile=args.output
     print "Outputfile:",outfile
     lockfile.write("Outfile= "+outfile+"\n")
