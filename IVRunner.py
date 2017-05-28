@@ -102,7 +102,7 @@ if settings['voltageSteps']:
         
 # stamp all files with starting time of this script
 now = datetime.now()
-tstamp=now.strftime("-%Y%m%d-%H:%M")
+tstamp=now.strftime("%Y%m%d-%H%M")
 
     
 if luaScript:
@@ -123,7 +123,7 @@ if luaScript:
     step = settings['stepSize']
 
     for channel in args.channel:
-
+        skip = False 
         lockfile=open("lock",'w+')
         ft232Controller.ClearChannel()
         ft232Controller.ActivateChannel(channel)
@@ -138,7 +138,7 @@ if luaScript:
             for i in range (1, len(vSteps)+1):
                 s.handle.write(cmd.format(i, vSteps[i-1]))
             
-            cmd = 'IVRunnerList({0})'.format('vList')
+            cmd = 'IVRunnerList({0}, {1})'.format('vList', settings['currentLimit'])
             s.handle.write(cmd)
         else:
             print "++++++++++++++++++++++++++++++++++++++++"
@@ -157,35 +157,67 @@ if luaScript:
                 print 'exception {0}'.format(e)
                 break
 
-    s.DisableOutput()
-    s.handle.clear()
-    s.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.readings)')
-    lastMeasure = s.handle.read()
-    i = lastMeasure.strip().split(',')
-    print i
-    s.handle.clear()
-    s.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.sourcevalues)')
-#    s.handle.write('printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.sourcevalues)')
-    lastMeasure = s.handle.read()
-    v = lastMeasure.strip().split(',')
+        s.DisableOutput()
+        s.handle.clear()
+        time.sleep(0.25)
+        i = None
+        v = None
+        try:
+            s.handle.timeout = 3
+
+            for x in range(0, 3):
+                if not i:
+                    try:
+                        s.handle.clear()
+                        s.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.readings)')
+                        time.sleep(0.1)
+                        lastMeasure = s.handle.read()
+                        #print lastMeasure
+                        i = lastMeasure.strip().split(',')
+                    except Exception as e:
+                        print 'Failed read {0} of 3'.format(x)
+                        i = None
+                elif not v:
+                    try:
+                        s.handle.clear()
+                        s.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.sourcevalues)')
+                        time.sleep(0.1)
+                        lastMeasure = s.handle.read()
+                        #print lastMeasure
+                        v = lastMeasure.strip().split(',')
+                    except Exception as e:
+                        print 'Failed v. read {0} of 3'.format(x)
+                        v = None
+                if i is not None and v is not None:
+                    break
+
+        except Exception as e:
+            print 'Failed to read values for this run: {0}'.format(e)
+            print 'Values seen: {0}, {1}'.format(i, v)
+            skip = True
+            
+        s.Discharge(3)
+
+        outfile = None
+        if settings['output']:
+            outfile = settings['output']
+        else:
+            outfile = '{0}_Ch{1}_iLED{2}-{3}.csv'.format(settings['device'], channel, settings['led'], tstamp)
+
+        if not skip:
+            print 'i:{0}, v:{1}'.format(i, v)
+            print "Outputfile:",outfile
+            lockfile.write("Outfile= "+outfile+"\n")
+            lockfile.flush()
+            f = open(outfile,'w+')
+            map(lambda x,y: f.write('{0},{1}\n'.format(x,y)), v,i)
+            f.flush()
+        else:
+            print 'Skipping output'
+        s.Beep([(0.5,400)])
+
+    print 'Finished Running Curves!'
     
-#    map(lambda x,y: sys.stdout.write('{0}:{1}\n'.format(x,y)), v, i)
-    s.Discharge(3)
-
-    outfile = None
-    if settings['output']:
-        outfile = settings['output']
-    else:
-        outfile = '{0}_Ch{1}_iLED{2}_{3}.csv'.format(settings['device'], channel, settings['led'], tstamp)
-
-
-    print "Outputfile:",outfile
-    lockfile.write("Outfile= "+outfile+"\n")
-    lockfile.flush()
-    f = open(outfile,'w+')
-    map(lambda x,y: f.write('{0},{1}\n'.format(x,y)), v,i)
-    
-    s.Beep([(0.5,400)])
     exit()
 
 
@@ -221,6 +253,7 @@ if "fast" in args.device:
 
     
 for channel in args.channel:
+    s.SetVsteps(settings['min'], settings['max'], 0, settings['stepSize'])
     lockfile=open("lock",'w+')
     print "++++++++++++++++++++++++++++++++++++++++"
     print "Doing I-V scan for pin #",channel
@@ -228,7 +261,7 @@ for channel in args.channel:
     if channel<0: ch="00"
     else: ch="%02d" % channel
     if args.output=="":
-        outfile=args.device+'_Ch'+ch+'_iLED'+str(args.iLED)+tstamp+'.csv'
+        outfile=args.device+'_Ch'+ch+'_iLED-'+str(args.iLED)+tstamp+'.csv'
     else: outfile=args.output
     print "Outputfile:",outfile
     lockfile.write("Outfile= "+outfile+"\n")
