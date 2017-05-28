@@ -87,6 +87,7 @@ def loadSettings(filename):
         settings['device'] = c.get(section, 'device')
         settings['voltageSteps'] = c.get(section, 'voltageSteps')
         if settings['voltageSteps'] == 'None':
+            print 'No Voltage steps provided'
             settings['voltageSteps'] = None 
 
         try:
@@ -119,7 +120,7 @@ def loadSettings(filename):
 
 
 def processArgs(args, settings):
-    settings['voltageSteps'] = None
+
     if args.limit:
         settings['currentLimit'] = args.limit
         
