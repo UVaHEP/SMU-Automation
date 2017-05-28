@@ -1,20 +1,36 @@
 import mpsse
 defaultMap = {
-            2 : (1, 0x1),
-            3 : (1, 0x2),
-            4 : (1, 0x4),
-            5 : (1, 0x8),
-            6 : (1, 0x10),
-            9 : (2, 0x1),
-            10 : (2, 0x2),
-            11 : (2, 0x4),
-            12 : (2, 0x8),
-            13 : (2, 0x10)
+    2 : (1, 0x1),
+    3 : (1, 0x2),
+    4 : (1, 0x4),
+    5 : (1, 0x8),
+    6 : (1, 0x10),
+    9 : (2, 0x1),
+    10 : (2, 0x2),
+    11 : (2, 0x4),
+    12 : (2, 0x8),
+    13 : (2, 0x10),
+    14 : (2, 0x20)
+}
+
+switcherMap = {
+     1 : (1, 0x1),
+     2 : (1, 0x4),
+     3 : (1, 0x10),
+     4 : (1, 0x40),
 }
 
 
+# defaultMap = {
+#     1 : (1, 0x1),
+#     2 : (1, 0x4),
+#     3 : (1, 0x10),
+#     4 : (1, 0x40),
+# }
+
+
 class FT232H:
-    def __init__(self, mode, disableOnExit=True, pinMap=defaultMap,  dacAddress='\xC0'):
+    def __init__(self, mode, disableOnExit=True, pinMap=defaultMap,  dacAddress='\xC0', serial = None):
 
         self.disableOnExit = disableOnExit
         self.address = dacAddress
@@ -22,14 +38,22 @@ class FT232H:
         self.ledActive = False
         self.relayActive = False 
         self.debug = False
+
         
         try:
             if (mode == 'i2c'):
                 self.mode = 'i2c'
                 self.controller = mpsse.MPSSE(mpsse.I2C, mpsse.ONE_HUNDRED_KHZ, mpsse.MSB)
+                if serial:
+                    self.controller.Close()
+                    self.controller.Open(0x0403, 0x6014, mpsse.I2C, mpsse.ONE_HUNDRED_KHZ, mpsse.MSB, serial=serial)
             elif (mode == 'spi'):
                 self.mode = 'spi'
                 self.controller = mpsse.MPSSE(mpsse.SPI0, mpsse.ONE_HUNDRED_KHZ, mpsse.MSB)
+                if serial:
+                    self.controller.Close()
+                    self.controller.Open(0x0403, 0x6014, mpsse.SPI0, mpsse.ONE_HUNDRED_KHZ, mpsse.MSB, serial=serial)
+
         except Exception as e:
             print 'Warning! No supported device found.'
             self.controller = None
