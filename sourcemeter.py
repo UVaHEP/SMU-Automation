@@ -127,7 +127,7 @@ class Sourcemeter:
         print 'doing list sweep'
         pass
 
-    def uploadScript(self, scriptName, script):
+    def uploadScript(self, scriptName, script, delay=None):
         #Upload a user script to a Keithley sourcemeter
         print 'Uploading {0}'.format(scriptName)
         try:
@@ -136,6 +136,8 @@ class Sourcemeter:
             self.handle.write('loadscript {0}\n'.format(scriptName))
             for l in script:
                 self.handle.write(l)
+            if delay:
+                time.sleep(0.01)
             self.handle.write('endscript')
             
         except Exception as e:

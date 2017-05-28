@@ -85,7 +85,7 @@ ft232Controller.SetLight(settings['led'])
 ft232Controller.Persist()
 ft232Controller = None
 time.sleep(0.25)
-ft232Controller = FT232H('spi')
+ft232Controller = FT232H('spi', serial='00-04')
 
 if settings['backterm']:
     s.UseRearTerm()
@@ -108,7 +108,11 @@ tstamp=now.strftime("%Y%m%d-%H%M")
 if luaScript:
     print 'Uploading script from: {0}'.format(settings['script'])
     s.handle.write('script.delete("{0}")'.format('IVRunnerScript'))
-    s.uploadScript('IVRunnerScript', luaScript)
+    if settings['model'].find('k2611a') != -1:
+        ## Small delay to avoid queue full error
+        s.uploadScript('IVRunnerScript', luaScript, 0.01)
+    else:
+        s.uploadScript('IVRunnerScript', luaScript)
     s.handle.write('IVRunnerScript.run()')
     time.sleep(0.25)
 
@@ -123,6 +127,7 @@ if luaScript:
     step = settings['stepSize']
 
     for channel in args.channel:
+        print 'Using these vsteps {0}'.format(settings['voltageSteps'])
         skip = False 
         lockfile=open("lock",'w+')
         ft232Controller.ClearChannel()
@@ -131,12 +136,19 @@ if luaScript:
         s.EnableOutput()
                 
         if vSteps:
-            print 'Running IVRunnerList with steps from {0}'.format(settings['voltageSteps'])
             lstBuilderCmd = 'vList = {}'
+
+
             s.handle.write(lstBuilderCmd)
+            
             cmd = 'vList[{0}] = {1}'
             for i in range (1, len(vSteps)+1):
                 s.handle.write(cmd.format(i, vSteps[i-1]))
+
+                if settings['model'].find('2611a') != -1:
+                    #Small delay to avoid queue full
+                    time.sleep(0.01)
+
             
             cmd = 'IVRunnerList({0}, {1})'.format('vList', settings['currentLimit'])
             s.handle.write(cmd)
@@ -164,12 +176,18 @@ if luaScript:
         v = None
         try:
             s.handle.timeout = 3
+            cmdi = 'printbuffer(1,defbuffer1.n,defbuffer1.readings)'
+            cmdv = 'printbuffer(1,defbuffer1.n,defbuffer1.sourcevalues)'
+            if settings['model'].find('2611a') != -1:
+                cmdi = 'printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.readings)'
+                cmdv = 'printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.sourcevalues)'
 
             for x in range(0, 3):
+                
                 if not i:
                     try:
                         s.handle.clear()
-                        s.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.readings)')
+                        s.handle.write(cmdi)
                         time.sleep(0.1)
                         lastMeasure = s.handle.read()
                         #print lastMeasure
@@ -180,7 +198,7 @@ if luaScript:
                 elif not v:
                     try:
                         s.handle.clear()
-                        s.handle.write('printbuffer(1,defbuffer1.n,defbuffer1.sourcevalues)')
+                        s.handle.write(cmdv)
                         time.sleep(0.1)
                         lastMeasure = s.handle.read()
                         #print lastMeasure
