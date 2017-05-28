@@ -76,9 +76,8 @@ while abs(delta) > resol:
     delta=(current-lastVal)/current
     
 gIVset=TGraph() ; gIVset.SetTitle("V vs I [A];I;Volts")
+gIVset.SetPoint(0,current,voltage)
 
-
-gIVset.SetPoint(gIVset.GetN(),current,voltage)
 if voltage>0: step=args.vstep
 else: step=-1*args.vstep
 sign=-1
@@ -93,10 +92,12 @@ while (delta>0):
     voltage=voltage+step
     print "New voltage setting",voltage
     current=abs(float(s.ReadVIPoint(voltage)))
+    print "Read current",current
     gIVset.SetPoint(gIVset.GetN(),current,voltage)
     delta=(current-itarget)*sign
     if abs(delta)>delta0:  # we're not converging
         print "Warning voltage search is diverging. Exiting..."
+        print "This may be due to a noisy measurement.  Try running again, if no problems are expected."
         sys.exit(1)
     
 tc=TCanvas("tc","Search for target current")
