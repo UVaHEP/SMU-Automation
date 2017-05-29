@@ -42,7 +42,8 @@ def buildParser():
                         help="Specifies intensity of LEDs, range is integers 0-4095")
     parser.add_argument('--config', type=str, default=None,
                         help="Specify the configuration file to use")
-
+    parser.add_argument('--channelMap', type=str, default=None,
+                        help="Channel Pin Map to use")
 
 
     ##### I-V Curve Specific Arguments #####
@@ -56,6 +57,8 @@ def buildParser():
                         help="The number of steps in the staircase sweep [100]")
     parser.add_argument('-S', '--stepsize', type=float, default=None,
                         help="Step size for the staircase sweep in units of volts [None]")
+    parser.add_argument('--serial', type = str, default = None,
+                        help="ft232H Serial to use")
     parser.add_argument('-m', '--min', type=float, default=None,
                         help="Voltage at which to start staircase sweep")
     parser.add_argument('-x', '--max', type=float, default=None,
@@ -67,8 +70,9 @@ def buildParser():
 
 
 def loadSettings(filename):
-    settings = {'script':None, 'host':None, 'port':23, 'model':None,
-                'voltageSteps':None}
+    settings = {'script':None, 'host':None, 'port':23, 'model':None, 'serial':None,
+                'channelMap': None, 'voltageSteps':None}
+                
 
     
     print 'Trying to use {0} for Configuration file'.format(filename)
@@ -86,6 +90,8 @@ def loadSettings(filename):
         settings['autorange'] = c.getboolean(section, 'autorange')
         settings['device'] = c.get(section, 'device')
         settings['voltageSteps'] = c.get(section, 'voltageSteps')
+        settings['serial'] = c.get(section, 'ft232Serial')
+        
         if settings['voltageSteps'] == 'None':
             print 'No Voltage steps provided'
             settings['voltageSteps'] = None 
@@ -112,6 +118,7 @@ def loadSettings(filename):
         settings['max'] = c.getfloat(section, 'max')
         settings['file'] = c.get(section, 'file')
         settings['led'] = c.getint(section, 'led')
+        settings['channelMap'] = c.get(section, 'channelMap')
             
     except Exception as e:
         return None
@@ -161,17 +168,19 @@ def processArgs(args, settings):
 
     if args.device:
         settings['device'] = args.device
+
+    if args.serial:
+        settings['serial'] = args.serial
     
     #if settings['max'] < settings['min'] and settings['stepSize'] > 0:
         #invert stepSize if we're going to negative values
        # settings['stepSize'] = settings['stepSize']*-1
-    
+
+    if args.channelMap:
+        settings['channelMap'] = args.channelMap
 
     if args.iLED:
         settings['led'] = args.iLED
-    elif not settings['script']:
-        settings['led'] = 0
-
 
 
     

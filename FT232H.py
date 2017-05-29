@@ -1,5 +1,14 @@
 import mpsse
-defaultMap = {
+
+
+
+pinMaps = {
+    'default':None,
+    'switcher':None,
+    'testBeam':None
+}
+
+pinMaps['default'] = {
     2 : (1, 0x1),
     3 : (1, 0x2),
     4 : (1, 0x4),
@@ -13,24 +22,30 @@ defaultMap = {
     14 : (2, 0x20)
 }
 
-switcherMap = {
+pinMaps['switcher'] =  {
      1 : (1, 0x1),
      2 : (1, 0x4),
      3 : (1, 0x10),
      4 : (1, 0x40),
 }
 
-
-# defaultMap = {
-#     1 : (1, 0x1),
-#     2 : (1, 0x4),
-#     3 : (1, 0x10),
-#     4 : (1, 0x40),
-# }
+pinMaps['testBeam'] = {
+    2 : (1, 0x1),
+    3 : (1, 0x2),
+    4 : (1, 0x8),
+    5 : (1, 0x4),
+    6 : (1, 0x10),
+    9 : (2, 0x1),
+    10 : (2, 0x4),
+    11 : (2, 0x2),
+    12 : (2, 0x08),
+    13 : (2, 0x20),
+    14 : (2, 0x10)
+}
 
 
 class FT232H:
-    def __init__(self, mode, disableOnExit=True, pinMap=defaultMap,  dacAddress='\xC0', serial = None):
+    def __init__(self, mode, disableOnExit=True, pinMap='default',  dacAddress='\xC0', serial = None):
 
         self.disableOnExit = disableOnExit
         self.address = dacAddress
@@ -63,7 +78,7 @@ class FT232H:
 
         self.activeChannel = 0
 
-        self.pinMap = pinMap
+        self.pinMap = pinMaps[pinMap]
 
 
     def __pass__(self):

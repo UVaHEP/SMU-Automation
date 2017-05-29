@@ -1,4 +1,5 @@
 function IVRunnerList(vList, ilimit)
+
    errorqueue.clear()
    display.clear()
    display.clear()
@@ -24,16 +25,41 @@ function IVRunnerList(vList, ilimit)
 
    element = 1
    while vList[element] do
-      print(string.format('Increasing voltage to %.5g V', smua.source.levelv))
-      smua.source.levelv = vList[element]
+      eType = type(vList[element])
+      if (eType == 'number') then
+	 print(string.format('Increasing voltage to %.5g V', smua.source.levelv))
+	 smua.source.levelv = vList[element]
+      elseif (eType == 'string') then
+	 print('Beginning to settle')
+	 -- We use the format v:p to denote a voltage to stop at (v), and a settling percentage to wait for
+	 -- where the current measurement is less than p % different than the previous measurement
+	 pos = string.find(vList[element], ':')
+	 waitV = tonumber(string.sub(vList[element], 1, pos-1))
+	 percentage = tonumber(string.sub(vList[element], pos+1))/100
+
+	 smua.source.levelv = waitV
+	 last = smua.measure.i()
+	 pdiff = 1
+
+	 while pdiff > percentage do 
+	    current = smua.measure.i()
+	    deltaI = current - last
+	    pdiff = math.abs(deltaI/current)
+	    print(string.format('Settling, i: %.3g nA, last I: %.3g nA, dI: %.3g nA, %%diff: %.3g', current, last, deltaI, pdiff*100))
+	    last = current
+	 end
+	    
+	 print (string.format('Finished settling at %.5g V', smua.source.levelv))
+      end
+      
       i = smua.measure.i(smua.nvbuffer1)
 
-      rangeCheck = math.abs(i) > 0.8*smua.measure.rangei
+      rangeCheck = math.abs(i) > 0.7*smua.measure.rangei
       
       if rangeCheck then
 	 print ('Close to range limit, increasing to next level')
 	 smua.measure.rangei = smua.measure.rangei*10
-	 print(string.format("New Range: %.3g nA", smua.measure.rangei))
+	 print(string.format("New Range: %.3g A", smua.measure.rangei))
 
 
 	 limitCheck = (smua.source.limiti <= (smua.measure.rangei*10)) and (smua.measure.rangei < ilimit)
@@ -70,9 +96,7 @@ function IVRunnerList(vList, ilimit)
       compliance = status.measurement.current_limit.condition
       if (bit.bitand(compliance, 2) > 0) then
 	 if (i >= limiti) then
-	    print('At or above current limit! Aborting...\n')
-	    display.clear()
-	    display.settext('Above current limit!')
+	    print('At or above current limit! Aborting...')
 	    break
 	 end
       end

@@ -81,12 +81,24 @@ if args.BackTerm: s.UseRearTerm()
 #s.Config() # not needed, done by Reset()
 if args.limit>0: s.SetCurrentLimit(args.limit)
 
-ft232Controller.SetLight(settings['led'])
-ft232Controller.Persist()
+if settings['led'] < 0:
+    #skip setting the led
+    print 'Skipping led setup'
+else:
+    ft232Controller.SetLight(settings['led'])
+    ft232Controller.Persist()
+    
 ft232Controller = None
 time.sleep(0.25)
-ft232Controller = FT232H('spi', serial='00-04')
+if settings['serial']:
+    ft232Controller = FT232H('spi', serial=settings['serial'])
+else:
+    ft232Controller = FT232H('spi')
 
+if settings['channelMap']:
+    #Replace with access fn
+    ft232Controller.pinMap = pinMaps[settings['channelMap']]
+    
 if settings['backterm']:
     s.UseRearTerm()
 
@@ -127,7 +139,8 @@ if luaScript:
     step = settings['stepSize']
 
     for channel in args.channel:
-        print 'Using these vsteps {0}'.format(settings['voltageSteps'])
+        print 'Using these voltage steps {0}'.format(settings['voltageSteps'])
+        start = datetime.now()
         skip = False 
         lockfile=open("lock",'w+')
         ft232Controller.ClearChannel()
@@ -141,10 +154,16 @@ if luaScript:
 
             s.handle.write(lstBuilderCmd)
             
-            cmd = 'vList[{0}] = {1}'
-            for i in range (1, len(vSteps)+1):
-                s.handle.write(cmd.format(i, vSteps[i-1]))
 
+            for i in range (1, len(vSteps)+1):
+                if vSteps[i-1].find(':') != -1:
+                    ## If we have a settling step
+                    cmd = "vList[{0}] = '{1}'"
+                else:
+                    cmd = 'vList[{0}] = {1}'
+                    
+                s.handle.write(cmd.format(i, vSteps[i-1]))
+                #print cmd.format(i, vSteps[i-1])
                 if settings['model'].find('2611a') != -1:
                     #Small delay to avoid queue full
                     time.sleep(0.01)
@@ -233,6 +252,10 @@ if luaScript:
         else:
             print 'Skipping output'
         s.Beep([(0.5,400)])
+        stop = datetime.now()
+        mins = (stop-start).seconds/60
+        secs = (stop-start).seconds % 60
+        print('Time Elapsed: min: {0}, seconds: {1}'.format(mins, secs))
 
     print 'Finished Running Curves!'
     
