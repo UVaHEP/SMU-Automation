@@ -139,13 +139,19 @@ if luaScript:
     end = settings['max']
     step = settings['stepSize']
 
+    if args.channel == None:
+        print 'No Channels, assuming device has been directly connected'
+        args.channel = [-1]
+    
     for channel in args.channel:
         print 'Using these voltage steps {0}'.format(settings['voltageSteps'])
         start = datetime.now()
         skip = False 
         lockfile=open("lock",'w+')
-        ft232Controller.ClearChannel()
-        ft232Controller.ActivateChannel(channel)
+        if channel != -1:
+            ft232Controller.ClearChannel()
+            ft232Controller.ActivateChannel(channel)
+            channel = 'direct'
 
         s.Discharge(settings['dischargebefore'])
         s.EnableOutput()
@@ -255,7 +261,7 @@ if luaScript:
             f.flush()
         else:
             print 'Skipping output'
-        s.Beep([(0.5,400)])
+        s.Beep([(0.1,400)])
         stop = datetime.now()
         mins = (stop-start).seconds/60
         secs = (stop-start).seconds % 60
