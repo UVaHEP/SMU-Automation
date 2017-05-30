@@ -124,6 +124,7 @@ function IVRunnerList(vList, ilimit)
 
    print('Done')
    smu.source.level = 0
+   ivBuffer.appendmode = 0
    smu.source.output = smu.OFF
    display.clear()
    display.settext(display.TEXT1, "Done")
