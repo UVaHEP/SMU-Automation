@@ -118,6 +118,7 @@ tstamp=now.strftime("%Y%m%d-%H%M")
 
     
 if luaScript:
+
     print 'Uploading script from: {0}'.format(settings['script'])
     s.handle.write('script.delete("{0}")'.format('IVRunnerScript'))
     if settings['model'].find('k2611a') != -1:
@@ -128,10 +129,10 @@ if luaScript:
     s.handle.write('IVRunnerScript.run()')
     time.sleep(0.25)
 
-    s.SetSourceDelay(0.1)
-    s.SetNPLC(3)
-
-        
+    s.SetSourceDelay(settings['sourcedelay'])
+    s.SetNPLC(settings['nplc'])
+    s.SetRepeatAverage(settings['repeatAvg'])
+    
     
     
     start = settings['min']
@@ -145,7 +146,8 @@ if luaScript:
         lockfile=open("lock",'w+')
         ft232Controller.ClearChannel()
         ft232Controller.ActivateChannel(channel)
-        s.Discharge(3)
+
+        s.Discharge(settings['dischargebefore'])
         s.EnableOutput()
                 
         if vSteps:
@@ -178,7 +180,7 @@ if luaScript:
             s.handle.write(cmd)
 
         time.sleep(0.25)
-        s.handle.timeout = 2
+        s.handle.timeout = 2.5
         l = s.handle.read()
         while l.find('Done') == -1:
             try:
@@ -194,9 +196,11 @@ if luaScript:
         i = None
         v = None
         try:
-            s.handle.timeout = 3
-            cmdi = 'printbuffer(1,defbuffer1.n,defbuffer1.readings)'
-            cmdv = 'printbuffer(1,defbuffer1.n,defbuffer1.sourcevalues)'
+            s.handle.timeout = 2.5
+            cmdi = 'printbuffer(1,ivBuffer.n,ivBuffer.readings)'
+            cmdv = 'printbuffer(1,ivBuffer.n,ivBuffer.sourcevalues)'
+            #cmdi = 'printbuffer(1,defbuffer1.n,defbuffer1.readings)'
+            #cmdv = 'printbuffer(1,defbuffer1.n,defbuffer1.sourcevalues)'
             if settings['model'].find('2611a') != -1:
                 cmdi = 'printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.readings)'
                 cmdv = 'printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.sourcevalues)'
@@ -261,25 +265,6 @@ if luaScript:
     
     exit()
 
-
-
-### Scan for potentially working channels
-def detectGoodChannels(controller, chLst, LEDValue):
-    ## First get a list of dark currents at 0 and -1 Volts
-    data = []
-    for channel in chLst:
-        controller.ClearChannel()
-        controller.ActivateChannel(channel)
-        datum = [channel, s.ReadVIPoint(0), s.ReadVIPoint(-1)]
-        darkCh.append(dark)
-        controller.SetLight(LEDValue)
-        datum.append(s.ReadVIPoint(0))
-        data.append(datum)
-        s.DisableOutput()
-
-    print 'Ch, Dark(0) V, Dark(-1 )V, Light {0}'.format(LEDValue)
-    for datum in data:
-        print '{0}: {1}, {2}, {3}'.format(datum[0], datum[1], datum[2], datum[3])
 
 
 

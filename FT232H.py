@@ -66,6 +66,7 @@ class FT232H:
                 self.mode = 'spi'
                 self.controller = mpsse.MPSSE(mpsse.SPI0, mpsse.ONE_HUNDRED_KHZ, mpsse.MSB)
                 if serial:
+                    print 'Using serial {0}'.format(serial)
                     self.controller.Close()
                     self.controller.Open(0x0403, 0x6014, mpsse.SPI0, mpsse.ONE_HUNDRED_KHZ, mpsse.MSB, serial=serial)
 

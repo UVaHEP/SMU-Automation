@@ -91,6 +91,8 @@ def loadSettings(filename):
         settings['device'] = c.get(section, 'device')
         settings['voltageSteps'] = c.get(section, 'voltageSteps')
         settings['serial'] = c.get(section, 'ft232Serial')
+        if settings['serial'].find('None') != -1:
+            settings['serial'] = None
         
         if settings['voltageSteps'] == 'None':
             print 'No Voltage steps provided'
