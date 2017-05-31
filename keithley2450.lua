@@ -13,14 +13,17 @@ function IVRunnerList(vList, ilimit)
 
 
       
-   smu.measure.range = 10e-9 --10nA is the minimum of the 2450
+   smu.measure.range = 1e-6 --10nA is the minimum of the 2450
    print(string.format('Starting with max current limit of %s for low range', smu.measure.range))
+   smu.source.ilimit.level = smu.measure.range-(smu.measure.range*0.01)
    
    defbuffer1.clear()   
    defbuffer1.appendmode = 1
---   defbuffer1.collectsourcevalues = 1
+   --   defbuffer1.collectsourcevalues = 1
+   smu.source.func = smu.FUNC_DC_VOLTAGE
+   smu.measure.func = smu.FUNC_DC_CURRENT
+   smu.measure.autozero.once()
 
-   
    smu.source.level = vList[1]
    i = smu.measure.read()
    print(string.format('%s', i))
@@ -32,10 +35,40 @@ function IVRunnerList(vList, ilimit)
    print(string.format('%s', i))
    defbuffer1.clear()   
 
+   ivBuffer = buffer.make(500)
+   ivBuffer.clear()
+   ivBuffer.appendmode = 1
    element = 1
    while vList[element] do
-      smu.source.level = vList[element]
-      i = smu.measure.read()
+      eType = type(vList[element])
+      if (eType == 'number') then
+	 --print(string.format('Increasing voltage to %.5g V', smu.source.level))
+	 smu.source.level = vList[element]
+      elseif (eType == 'string') then
+	 print('Beginning to settle')
+	 -- We use the format v:p to denote a voltage to stop at (v), and a settling percentage to wait for
+	 -- where the current measurement is less than p % different than the previous measurement
+	 pos = string.find(vList[element], ':')
+	 waitV = tonumber(string.sub(vList[element], 1, pos-1))
+	 percentage = tonumber(string.sub(vList[element], pos+1))/100
+
+
+	 smu.source.level = waitV
+	 last = smu.measure.read()
+	 pdiff = 1
+
+	 while pdiff > percentage do 
+	    current = smu.measure.read()
+	    deltaI = current - last
+	    pdiff = math.abs(deltaI/current)
+	    print(string.format('Settling, i: %.3g nA, last I: %.3g nA, dI: %.3g nA, %%diff: %.3g', current, last, deltaI, pdiff*100))
+	    last = current
+	 end
+	    
+	 print (string.format('Finished settling at %.5g V', smu.source.level))
+      end
+
+      i = smu.measure.read(ivBuffer)
 
       rangeCheck = math.abs(i) > 0.6*smu.measure.range
       
@@ -91,6 +124,7 @@ function IVRunnerList(vList, ilimit)
 
    print('Done')
    smu.source.level = 0
+   ivBuffer.appendmode = 0
    smu.source.output = smu.OFF
    display.clear()
    display.settext(display.TEXT1, "Done")

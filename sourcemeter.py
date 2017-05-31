@@ -671,6 +671,7 @@ class Keithley2450(Sourcemeter):
     
     def Discharge(self, n=10):
         print "Discharging cycle, measurements =",n
+        self.handle.write('smu.measure.range = 100e-9')
         self.SetVoltage(0)
         self.EnableOutput()
         for i in range(n):
