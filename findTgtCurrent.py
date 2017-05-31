@@ -4,11 +4,18 @@
 # target current is located.   The voltage setting is returned
 # This is a quick/dirty approximation only
 
-import argparse,sys,time
+import argparse,sys,time,commands
 import vxi11
-from FT232H import *
 from sourcemeter import *
-from ROOT import *
+
+rootlibs=commands.getoutput("root-config --libdir")
+sys.path.append(rootlibs)
+
+# keep ROOT TApplication from grabbing -h flag
+from ROOT import PyConfig
+PyConfig.IgnoreCommandLineOptions = True
+from ROOT import TGraph
+from ROOT import TCanvas
 
 
 parser = argparse.ArgumentParser(description='Select a channel')
@@ -36,6 +43,7 @@ itarget=args.itarget*1e-9
 if args.channel is None:
     print 'setV::Warning: Using current channel selection' 
 else:
+    from FT232H import *
     print 'setV::Info: Turning on Channel {0}.'.format(args.channel)
     ft232Controller = FT232H('spi')
     ft232Controller.Persist()

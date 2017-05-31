@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import argparse
 import vxi11
-from FT232H import *
 from sourcemeter import *
 
 
@@ -26,8 +25,8 @@ args = parser.parse_args()
 if args.channel is None:
     print 'setV::Warning: Using current channel selection' 
 else:
+    from FT232H import *
     print 'setV::Info: Turning on Channel {0}.'.format(args.channel)
-
     ft232Controller = FT232H('spi')
     ft232Controller.Persist()
     ft232Controller.ClearChannel()
