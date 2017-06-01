@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import argparse
+import time
 from FT232H import *
 
 
@@ -14,6 +15,7 @@ parser.add_argument('-m', '--switcherMap', action='store_true',
 parser.add_argument('-t', '--testBeamMap', action='store_true', help="Use Test Beam Map")
 parser.add_argument('-s', '--serial', type=str, default = None,
                     help ="Serial number of FT232H Controller to use")
+parser.add_argument('-a', '--all', action='store_true', help='Enable all channels for a given pin map')
 
 args = parser.parse_args()
 if args.switcherMap:
@@ -29,13 +31,20 @@ else:
     
 ft232Controller.Persist()
 
-if args.channel is None:
+if args.channel is None and not args.all:
     print 'Please give me a channel'
     exit()
 
-print 'Turning on Channel {0}.'.format(args.channel)
+
 
 ft232Controller.ClearChannel()
-ft232Controller.ActivateChannel(args.channel)
+if args.all:
+    hexCode = 0x1f
+    ft232Controller.ActivateChannel('r1')
+    ft232Controller.ActivateChannel('r2')
+    
+else:
+    print 'Turning on Channel {0}.'.format(args.channel)
+    ft232Controller.ActivateChannel(args.channel)
 #turn off all the channels
 

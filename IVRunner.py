@@ -81,6 +81,8 @@ if args.BackTerm: s.UseRearTerm()
 #s.Config() # not needed, done by Reset()
 if args.limit>0: s.SetCurrentLimit(args.limit)
 
+
+print 'LED Set To: {0}'.format(settings['led'])
 if settings['led'] < 0:
     #skip setting the led
     print 'Skipping led setup'
@@ -139,11 +141,11 @@ if luaScript:
     end = settings['max']
     step = settings['stepSize']
 
-    if args.channel == None:
+    if settings['channels'] == None:
         print 'No Channels, assuming device has been directly connected'
-        args.channel = [-1]
+        settings['channels'] = [-1]
     
-    for channel in args.channel:
+    for channel in settings['channels']:
         print 'Using these voltage steps {0}'.format(settings['voltageSteps'])
         start = datetime.now()
         skip = False 
@@ -151,6 +153,7 @@ if luaScript:
         if channel != -1:
             ft232Controller.ClearChannel()
             ft232Controller.ActivateChannel(channel)
+        else:
             channel = 'direct'
 
         s.Discharge(settings['dischargebefore'])
@@ -158,7 +161,8 @@ if luaScript:
                 
         if vSteps:
             lstBuilderCmd = 'vList = {}'
-
+            print '+++++++++++++++++++++++++++++++++++++'
+            print 'Running voltage steps for pin #{0}'.format(channel)
 
             s.handle.write(lstBuilderCmd)
             
@@ -261,14 +265,14 @@ if luaScript:
             f.flush()
         else:
             print 'Skipping output'
-        s.Beep([(0.1,400)])
+        #s.Beep([(0.1,400)])
         stop = datetime.now()
         mins = (stop-start).seconds/60
         secs = (stop-start).seconds % 60
         print('Time Elapsed: min: {0}, seconds: {1}'.format(mins, secs))
 
     print 'Finished Running Curves!'
-    
+    s.handle.write('logout')
     exit()
 
 
@@ -284,7 +288,7 @@ if "fast" in args.device:
     s.SetNPLC(3)
 
     
-for channel in args.channel:
+for channel in settings['channels']:
     s.SetVsteps(settings['min'], settings['max'], 0, settings['stepSize'])
     lockfile=open("lock",'w+')
     print "++++++++++++++++++++++++++++++++++++++++"

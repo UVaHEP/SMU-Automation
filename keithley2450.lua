@@ -46,6 +46,7 @@ function IVRunnerList(vList, ilimit)
 	 smu.source.level = vList[element]
       elseif (eType == 'string') then
 	 print('Beginning to settle')
+
 	 -- We use the format v:p to denote a voltage to stop at (v), and a settling percentage to wait for
 	 -- where the current measurement is less than p % different than the previous measurement
 	 pos = string.find(vList[element], ':')
@@ -56,18 +57,28 @@ function IVRunnerList(vList, ilimit)
 	 smu.source.level = waitV
 	 last = smu.measure.read()
 	 pdiff = 1
-
-	 while pdiff > percentage do 
+	 settleCount = 0
+	 settleLimit = 25
+	 while pdiff > percentage and settleCount < settleLimit do
+	    settleCount = settleCount+1
 	    current = smu.measure.read()
 	    deltaI = current - last
 	    pdiff = math.abs(deltaI/current)
 	    print(string.format('Settling, i: %.3g nA, last I: %.3g nA, dI: %.3g nA, %%diff: %.3g', current, last, deltaI, pdiff*100))
 	    last = current
 	 end
-	    
-	 print (string.format('Finished settling at %.5g V', smu.source.level))
+
+
+	 if settleCount >= settleLimit then
+	    print('Had problems settling! Continuing')
+	 else 
+	    print (string.format('Finished settling at %.5g V', smu.source.level))
+	 end
+	 
       end
 
+
+      
       i = smu.measure.read(ivBuffer)
 
       rangeCheck = math.abs(i) > 0.6*smu.measure.range

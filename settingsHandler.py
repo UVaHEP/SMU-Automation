@@ -71,7 +71,7 @@ def buildParser():
 
 def loadSettings(filename):
     settings = {'script':None, 'host':None, 'port':23, 'model':None, 'serial':None,
-                'channelMap': None, 'voltageSteps':None}
+                'channelMap': None, 'voltageSteps':None, 'channels':None}
                 
 
     
@@ -121,6 +121,7 @@ def loadSettings(filename):
         settings['file'] = c.get(section, 'file')
         settings['led'] = c.getint(section, 'led')
         settings['channelMap'] = c.get(section, 'channelMap')
+        settings['channels'] = map(int, c.get(section, 'channels').split(','))
             
     except Exception as e:
         return None
@@ -184,7 +185,8 @@ def processArgs(args, settings):
     if args.iLED:
         settings['led'] = args.iLED
 
-
+    if args.channel:
+        settings['channels'] = args.channel
     
 
         
