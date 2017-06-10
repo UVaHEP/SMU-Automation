@@ -144,7 +144,25 @@ function IVRunnerList(vList, ilimit)
 end
 
 
-
+function readThermistor()
+   smu.measure.func = smu.FUNC_RESISTANCE
+   smu.source.output = smu.ON
+   smu.measure.read()
+   smu.measure.read()
+   smu.measure.read()
+   resistance = smu.measure.read()
+   print(resistance)
+   smu.source.output = smu.OFF
+   smu.measure.func = smu.FUNC_DC_CURRENT
+   smu.source.func=smu.FUNC_DC_VOLTAGE
+   display.clear()
+   display.settext(display.TEXT1, resistance)
+   
+   
+   print('Done')
+   
+end
+   
 
 
 

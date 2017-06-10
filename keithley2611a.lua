@@ -53,8 +53,12 @@ function IVRunnerList(vList, ilimit)
       end
       
       i = smua.measure.i(smua.nvbuffer1)
-
-      rangeCheck = math.abs(i) > 0.7*smua.measure.rangei
+      if i > 1e37 then
+	 -- We've hit our range limit and overflowed try to increase 
+	 smua.measure.rangei = smua.measure.rangei*10
+	 i = smua.measure.i(smua.nvbuffer1)
+      end
+      rangeCheck = math.abs(i) > 0.6*smua.measure.rangei
       
       if rangeCheck then
 	 print ('Close to range limit, increasing to next level')

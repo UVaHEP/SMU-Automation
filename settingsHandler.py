@@ -124,7 +124,7 @@ def loadSettings(filename):
         settings['channels'] = map(int, c.get(section, 'channels').split(','))
             
     except Exception as e:
-        return None
+        print e
         
     return settings
 
@@ -182,7 +182,8 @@ def processArgs(args, settings):
     if args.channelMap:
         settings['channelMap'] = args.channelMap
 
-    if args.iLED:
+    if args.iLED != None:
+        print 'setting LED to {0}'.format(args.iLED)
         settings['led'] = args.iLED
 
     if args.channel:
