@@ -37,22 +37,12 @@ else:
 settings = processArgs(args, settings)
 
 
-    
-
-
-
-
-
-
 luaScript = None 
 if settings['script']: 
     try:
         f = open(settings['script'])
         luaScript = f.readlines()
         f.close()
-#        print 'Using the following luascript \n------------------------'
-#        for line in luaScript:
-#            print line.strip()
     except Exception as e:
         print 'Failed to load script: {0}'.format(e)
         exit()
@@ -108,8 +98,7 @@ vSteps = None
 if settings['voltageSteps']:
     try:
         vf = open(settings['voltageSteps'])
-        vSteps = vf.readline().strip().split(',')  #map(float, vf.readline().split(','))
-#        print vSteps
+        vSteps = vf.readline().strip().split(',')  
     except Exception as e:
         print 'Failed to load voltage steps from: {0}'.format(settings['voltageSteps'])
         print 'Reason: {0}'.format(e)
@@ -175,12 +164,10 @@ if luaScript:
                     cmd = 'vList[{0}] = {1}'
                     
                 s.handle.write(cmd.format(i, vSteps[i-1]))
-                #print cmd.format(i, vSteps[i-1])
                 if settings['model'].find('2611a') != -1:
                     #Small delay to avoid queue full
                     time.sleep(0.01)
 
-            
             cmd = 'IVRunnerList({0}, {1})'.format('vList', settings['currentLimit'])
             s.handle.write(cmd)
         else:
@@ -223,7 +210,6 @@ if luaScript:
                         s.handle.write(cmdi)
                         time.sleep(0.1)
                         lastMeasure = s.handle.read()
-                        #print lastMeasure
                         i = lastMeasure.strip().split(',')
                     except Exception as e:
                         print 'Failed read {0} of 3'.format(x)
@@ -234,7 +220,6 @@ if luaScript:
                         s.handle.write(cmdv)
                         time.sleep(0.1)
                         lastMeasure = s.handle.read()
-                        #print lastMeasure
                         v = lastMeasure.strip().split(',')
                     except Exception as e:
                         print 'Failed v. read {0} of 3'.format(x)
@@ -276,18 +261,7 @@ if luaScript:
     exit()
 
 
-
-
-
-# hack: if string "fast" is included in the device name, then update the
-# default SMU settings
-if "fast" in args.device:
-    print "Using 10ms source delay for faster scan" 
-    s.SetSourceDelay(0.01)      # 10 ms source delay
-    s.SetDischargeCycles(3,3)   # just do 3 cycles before/after measurement 
-    s.SetNPLC(3)
-
-    
+## Use built-in IV-Curve Function     
 for channel in settings['channels']:
     s.SetVsteps(settings['min'], settings['max'], 0, settings['stepSize'])
     lockfile=open("lock",'w+')
