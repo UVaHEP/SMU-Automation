@@ -35,7 +35,7 @@ parser.add_argument('-F','--forward', action='store_true',
                     help="Takes default forward bias I-V curve if no data file")
 parser.add_argument('-H','--hysteresis', action='store_true', default=False,
                     help="Repeat I-V measurement in reverse for hysteresis curve")
-parser.add_argument('-l', '--limit', type=float, default = 0.01,
+parser.add_argument('-l', '--limit', type=float, default = 0.001,
                     help="The current limit [0.01]")
 parser.add_argument('-s', '--numsteps', type=int, default=100,
                     help="The number of steps in the staircase sweep [100]")
@@ -179,7 +179,7 @@ for channel in args.channel:
         LminusD = I_l - I_d
         print "Current measure I_l({0}) is: {1} and LminusD is: {2}".format(halfVbr, I_l, abs(LminusD))
         if abs(LminusD) >= 10e-09: break
-        if LED==1400: break
+        if LED>1480: break
        
        
         LED = LED + args.LEDstepsize

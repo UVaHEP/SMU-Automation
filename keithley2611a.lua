@@ -51,13 +51,15 @@ function IVRunnerList(vList, ilimit)
 	    
 	 print (string.format('Finished settling at %.5g V', smua.source.levelv))
       end
-      
-      i = smua.measure.i(smua.nvbuffer1)
-      if i > 1e37 then
+      rangei = smua.measure.i()
+      while rangei > 1e37 do 
 	 -- We've hit our range limit and overflowed try to increase 
 	 smua.measure.rangei = smua.measure.rangei*10
-	 i = smua.measure.i(smua.nvbuffer1)
+	 rangei = smua.measure.i()
       end
+
+      
+      i = smua.measure.i(smua.nvbuffer1)
       rangeCheck = math.abs(i) > 0.6*smua.measure.rangei
       
       if rangeCheck then

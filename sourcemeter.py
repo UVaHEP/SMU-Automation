@@ -234,7 +234,7 @@ class Keithley2611(Sourcemeter):
     
     def Connect(self):
         identity = self.Model()
-        if (identity.find('MODEL 2611A') != -1):
+        if (identity.find('Model 2611A') != -1):
             print 'Model: '+identity
         else:
             print 'Wrong Model %s' % identity
