@@ -18,21 +18,20 @@ p = parser.parse_args()
 i = p.start
 vs = []
 if p.stop < p.start:
-    print 'stop < start'
-    if p.step < 0:
-        print 'Bad step choice, need a positive!'
-        exit()
+    #negative dV
+    p.step = -1*abs(p.step)
+    print 'stop: {0} < start: {1}, step: {2}'.format(p.stop, p.start, p.step)
     while i >= p.stop:
         if p.settle:
             vs.append('{0}:{1}'.format(i, p.sTime))
         else:
             vs.append(i)
-        i -= p.step
+        i += p.step
 elif p.stop > p.start:
-    print 'stop > start'
-    if p.step < 0:
-        print 'Bad step choice, need a positive!'
-        exit()
+    #positive dV
+    p.step = abs(p.step)
+    print 'start: {0} > stop: {1}, step: {2}'.format(p.start, p.stop, p.step)
+
     while i <= p.stop:
         if p.settle:
             vs.append('{0}:{1}'.format(i, p.sTime))
