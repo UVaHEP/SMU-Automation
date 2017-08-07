@@ -97,8 +97,9 @@ if settings['backterm']:
 vSteps = None
 if settings['voltageSteps']:
     try:
-        vf = open(settings['voltageSteps'])
-        vSteps = vf.readline().strip().split(',')  
+        vSteps = settingsHandler.parseSteps(settings['voltageSteps'])
+#        vf = open(settings['voltageSteps'])
+#        vSteps = vf.readline().strip().split(',')  
     except Exception as e:
         print 'Failed to load voltage steps from: {0}'.format(settings['voltageSteps'])
         print 'Reason: {0}'.format(e)
@@ -154,16 +155,26 @@ if luaScript:
             print 'Running voltage steps for pin #{0}'.format(channel)
 
             s.handle.write(lstBuilderCmd)
-            
 
-            for i in range (1, len(vSteps)+1):
-                if vSteps[i-1].find(':') != -1:
-                    ## If we have a settling step
-                    cmd = "vList[{0}] = '{1}'"
+            
+            k = vSteps.keys()
+            k.sort(reverse=True)
+            if abs(k[0]) > abs(k[-1]):
+                #sorted backwards
+                k.reverse()
+            for i in range (1, len(k)+1):                
+                step = k[i-1]
+                if step.mode == 's':
+                    #settling
+                    cmd = "vList[{0}] = '{1}:{2}'"
+                elif step.mode == 'p':
+                    #pausing
+                    cmd = "vList[{0}] = '{1}-{2}'"
                 else:
-                    cmd = 'vList[{0}] = {1}'
+                    #normal case
+                    cmd = "vList[{0}] = {1}"
                     
-                s.handle.write(cmd.format(i, vSteps[i-1]))
+                s.handle.write(cmd.format(i, k[i-1].level, k[i-1].value))
                 if settings['model'].find('2611a') != -1:
                     #Small delay to avoid queue full
                     time.sleep(0.01)

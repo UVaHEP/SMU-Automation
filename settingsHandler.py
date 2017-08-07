@@ -192,3 +192,55 @@ def processArgs(args, settings):
 
         
     return settings
+
+
+
+class vStep:
+    def __init__(self, level, mode=None, value = 0):
+        self.level = level
+        self.mode = mode
+        self.value = value
+
+def parseStep(s):
+    if s.find(':') == -1:
+        #not a special step
+        return vStep(s)
+    else:
+        #special step
+        try:
+            vLevel,mode,value = s.split(':')
+        except ValueError:
+            #Classic vSteps, settle only, no pause
+            vLevel,value = s.split(':')
+            mode = 's'
+        return vStep(vLevel, mode,value)
+
+def parseSteps(sList):
+    vSteps = {}
+    
+    if type(sList) is str:
+        #assume file
+        try:
+            f = open(sList)
+            steps = f.read().strip().split(',')
+            f.close()
+        except Exception as e:
+            print e
+    elif type(sList) is list:
+        steps = sList
+    else:
+        print 'Unknown container!'
+        steps = [] 
+    for s in steps:
+        step = parseStep(s)
+        vSteps[float(step.level)] = step
+    return vSteps
+
+    
+
+                
+            
+        
+                    
+                    
+                    

@@ -47,36 +47,58 @@ function IVRunnerList(vList, ilimit)
       elseif (eType == 'string') then
 	 print('Beginning to settle')
 
-	 -- We use the format v:p to denote a voltage to stop at (v), and a settling percentage to wait for
+	 -- Voltage Step Formats 
+	 -- '-' is used when we want to pause, with the voltage value followed by the pause time in seconds. 50.0-5.0, 50 V, 5s
+	 -- ':' is used for settling, with the voltage value followed by the settling value in a percentage. 50.0:25.0, 50 V, 25%
 	 -- where the current measurement is less than p % different than the previous measurement
+
+
+	 pause = false 
 	 pos = string.find(vList[element], ':')
+	 if pos == nil then
+	    -- we use - for pause
+	    pos = string.find(vList[element], '-')
+	    if pos == nil then
+	       print ('Bad voltage given,  stopping!!')
+	       break
+	    end
+	    pause = true
+	 end
 	 waitV = tonumber(string.sub(vList[element], 1, pos-1))
-	 percentage = tonumber(string.sub(vList[element], pos+1))/100
-
-
 	 smu.source.level = waitV
 	 last = smu.measure.read()
-	 pdiff = 1
-	 settleCount = 0
-	 settleLimit = 25
-	 while pdiff > percentage and settleCount < settleLimit do
-	    settleCount = settleCount+1
-	    current = smu.measure.read()
-	    deltaI = current - last
-	    pdiff = math.abs(deltaI/current)
-	    print(string.format('Settling, i: %.3g nA, last I: %.3g nA, dI: %.3g nA, %%diff: %.3g', current, last, deltaI, pdiff*100))
-	    last = current
-	 end
 
 
-	 if settleCount >= settleLimit then
-	    print('Had problems settling! Continuing')
-	 else 
-	    print (string.format('Finished settling at %.5g V', smu.source.level))
+	 if pause == false then
+	    percentage = tonumber(string.sub(vList[element], pos+1))/100
+	    pdiff = 1
+	    settleCount = 0
+	    settleLimit = 25
+	    while pdiff > percentage and settleCount < settleLimit do
+	       settleCount = settleCount+1
+	       current = smu.measure.read()
+	       deltaI = current - last
+	       pdiff = math.abs(deltaI/current)
+	       print(string.format('Settling, i: %.3g nA, last I: %.3g nA, dI: %.3g nA, %%diff: %.3g', current, last, deltaI, pdiff*100))
+	       last = current
+
+	       if settleCount >= settleLimit then
+		  print('Had problems settling! Continuing')
+	       else 
+		  print (string.format('Finished settling at %.5g V', smu.source.level))
+	       end
+	    end
+	 elseif pause == true then
+	    pauseTime = tonumber(string.sub(vList[element],pos+1))
+	    print('pausing for %g',pauseTime)
+	    local startTime = os.time()
+	    local endTime = startTime+pauseTime
+	    repeat 
+	       last = smu.measure.read()
+	       print('i:%.3g nA', last)
+	    until os.time() > endTime
 	 end
-	 
       end
-
 
       
       i = smu.measure.read(ivBuffer)
