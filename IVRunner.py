@@ -97,7 +97,7 @@ if settings['backterm']:
 vSteps = None
 if settings['voltageSteps']:
     try:
-        vSteps = settingsHandler.parseSteps(settings['voltageSteps'])
+        vSteps = parseSteps(settings['voltageSteps'])
 #        vf = open(settings['voltageSteps'])
 #        vSteps = vf.readline().strip().split(',')  
     except Exception as e:
@@ -156,28 +156,25 @@ if luaScript:
 
             s.handle.write(lstBuilderCmd)
 
-            
-            k = vSteps.keys()
-            k.sort(reverse=True)
-            if abs(k[0]) > abs(k[-1]):
-                #sorted backwards
-                k.reverse()
-            for i in range (1, len(k)+1):                
-                step = k[i-1]
+            for i in range (1, len(vSteps)+1):                
+                step = vSteps[i-1]
                 if step.mode == 's':
                     #settling
                     cmd = "vList[{0}] = '{1}:{2}'"
+                    print(cmd.format(i, step.level, step.value))
                 elif step.mode == 'p':
                     #pausing
-                    cmd = "vList[{0}] = '{1}-{2}'"
+                    cmd = "vList[{0}] = '{1}/{2}'"
+                    print(cmd.format(i, step.level, step.value))
                 else:
                     #normal case
                     cmd = "vList[{0}] = {1}"
-                    
-                s.handle.write(cmd.format(i, k[i-1].level, k[i-1].value))
+                    #print(cmd.format(i, step.level, step.value))
+
+                s.handle.write(cmd.format(i, step.level, step.value))
                 if settings['model'].find('2611a') != -1:
                     #Small delay to avoid queue full
-                    time.sleep(0.01)
+                    time.sleep(0.05)
 
             cmd = 'IVRunnerList({0}, {1})'.format('vList', settings['currentLimit'])
             s.handle.write(cmd)

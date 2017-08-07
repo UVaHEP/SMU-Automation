@@ -35,7 +35,7 @@ function IVRunnerList(vList, ilimit)
    print(string.format('%s', i))
    defbuffer1.clear()   
 
-   ivBuffer = buffer.make(500)
+   ivBuffer = buffer.make(2500)
    ivBuffer.clear()
    ivBuffer.appendmode = 1
    element = 1
@@ -45,10 +45,9 @@ function IVRunnerList(vList, ilimit)
 	 --print(string.format('Increasing voltage to %.5g V', smu.source.level))
 	 smu.source.level = vList[element]
       elseif (eType == 'string') then
-	 print('Beginning to settle')
-
+	
 	 -- Voltage Step Formats 
-	 -- '-' is used when we want to pause, with the voltage value followed by the pause time in seconds. 50.0-5.0, 50 V, 5s
+	 -- '-' is used when we want to pause, with the voltage value followed by the pause time in seconds. 50.0/5.0, 50 V, 5s
 	 -- ':' is used for settling, with the voltage value followed by the settling value in a percentage. 50.0:25.0, 50 V, 25%
 	 -- where the current measurement is less than p % different than the previous measurement
 
@@ -57,7 +56,7 @@ function IVRunnerList(vList, ilimit)
 	 pos = string.find(vList[element], ':')
 	 if pos == nil then
 	    -- we use - for pause
-	    pos = string.find(vList[element], '-')
+	    pos = string.find(vList[element], '/')
 	    if pos == nil then
 	       print ('Bad voltage given,  stopping!!')
 	       break
@@ -70,6 +69,7 @@ function IVRunnerList(vList, ilimit)
 
 
 	 if pause == false then
+	    print('Beginning to settle')
 	    percentage = tonumber(string.sub(vList[element], pos+1))/100
 	    pdiff = 1
 	    settleCount = 0
@@ -90,12 +90,12 @@ function IVRunnerList(vList, ilimit)
 	    end
 	 elseif pause == true then
 	    pauseTime = tonumber(string.sub(vList[element],pos+1))
-	    print('pausing for %g',pauseTime)
+	    print(string.format('pausing for %g seconds.',pauseTime))
 	    local startTime = os.time()
 	    local endTime = startTime+pauseTime
 	    repeat 
 	       last = smu.measure.read()
-	       print('i:%.3g nA', last)
+	       print(string.format('i:%.3g nA', 1e9*last))
 	    until os.time() > endTime
 	 end
       end

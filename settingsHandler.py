@@ -216,7 +216,7 @@ def parseStep(s):
         return vStep(vLevel, mode,value)
 
 def parseSteps(sList):
-    vSteps = {}
+    vSteps = []
     
     if type(sList) is str:
         #assume file
@@ -233,7 +233,7 @@ def parseSteps(sList):
         steps = [] 
     for s in steps:
         step = parseStep(s)
-        vSteps[float(step.level)] = step
+        vSteps.append(step)
     return vSteps
 
     
