@@ -104,8 +104,24 @@ function IVRunnerList(vList, ilimit)
       i = smu.measure.read(ivBuffer)
 
       rangeCheck = math.abs(i) > 0.6*smu.measure.range
-      
-      if rangeCheck then
+      lowerCheck = math.abs(i) < 0.05*smu.measure.range
+
+      --- We're using 1e-6 as a floor for our measurement range as we prefer the speed to the increased resolution you get at lower ranges
+      if lowerCheck then
+
+	 if smu.measure.range/10 >= 1e-6 then
+	    print ('Close to lower range limit, decreasing down')
+	    smu.measure.range = smu.measure.range/10
+	    print(string.format("New Range %.3g A", smu.measure.range))
+	 else
+	    if smu.measure.range != 1e-6 then
+	       smu.measure.range = 1e-6
+	       print(string.format("New Range %.3g A", smu.measure.range))
+	    end
+
+	    
+	 end
+      elseif rangeCheck then
       	 print ('Close to range limit, increasing to next level')
       	 smu.measure.range = smu.measure.range*10
       	 print(string.format("New Range: %.3g A", smu.measure.range))
@@ -132,6 +148,7 @@ function IVRunnerList(vList, ilimit)
 	    print(string.format('New Limit at: %s', smu.source.ilimit.level))
 	 end
       end
+      
 
       voltage = string.format("%.5g V", smu.source.level)
       current = string.format("%.3g nA", 1e9*i)
