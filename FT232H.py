@@ -45,6 +45,21 @@ pinMaps['testBeam'] = {
     'r2' : (2, 0x1f)
 }
 
+pinMaps['zifboard'] = {
+    6 : (1, 0x1),
+    5 : (1, 0x2),
+    4 : (1, 0x4),
+    3 : (1, 0x8),
+    2 : (1, 0x10),
+    13 : (2, 0x1),
+    12 : (2, 0x2),
+    11 : (2, 0x4),
+    10 : (2, 0x8),
+    9 : (2, 0x10),
+#    14 : (2, 0x20)
+}
+
+
 
 class FT232H:
     def __init__(self, mode, disableOnExit=True, pinMap='default',  dacAddress='\xC0', serial = None):

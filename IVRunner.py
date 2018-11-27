@@ -295,4 +295,7 @@ for channel in settings['channels']:
     print "----------------------------------------"
     lockfile.close()
     os.remove("lock")
-    
+
+# turn off LED
+ft232Controller.SetLight(0)
+
