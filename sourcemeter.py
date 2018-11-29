@@ -463,6 +463,8 @@ class Keithley2450(Sourcemeter):
     def __init__(self, host, port):
         Sourcemeter.__init__(self, host, port)
         self.handle=vxi11.Instrument(self.host)
+        self.Connected = False
+        self.ModelName = None
         self.ClearBuffer()
         self.Connect()
         #self.Reset()
@@ -488,13 +490,15 @@ class Keithley2450(Sourcemeter):
         identity = self.Model()
         if (identity.find('MODEL 2450') != -1):
             print 'Model: '+identity
+            self.Connected = True
+            self.ModelName = identity
         else:
             print 'Wrong Model %s' % identity
             self.handle.close()
             return            
         #self.Reset()
         #self.DisableOutput()
-        self.OutputFn('voltage')	
+        #self.OutputFn('voltage')	
 
     def ClearBuffer(self):
         return
@@ -530,15 +534,15 @@ class Keithley2450(Sourcemeter):
         self.handle.write('smu.reset()')
         self.Config()
 
-    def OutputFn(self, func):
+    def OutputFn(self, func=None):
         cmd = 'smu.source.func = {0}'
         if func == 'voltage':
             cmd = cmd.format('smu.FUNC_DC_VOLTAGE')
         elif func == 'current':
             cmd = cmd.format('smu.FUNC_DC_CURRENT')
         else:
-            print 'bad output function'
-            return
+            cmd = 'print(smu.source.func)'
+            return self.handle.ask(cmd)
         self.handle.write(cmd)
 
     def Autorange(self, state):
@@ -557,15 +561,26 @@ class Keithley2450(Sourcemeter):
             self.handle.write(cmd)
         except ValueError as e:
             print 'bad current in CurrentLimit'
-            
+
     def SetVoltageLimit(self, voltage):
-        cmd = 'smu.source.range = {0}'
+        cmd = 'smu.source.vlimit.level = {0}'
         try:
-            volt = float(voltage)
-            cmd = cmd.format(volt)
+            v = float(voltage)
+            cmd = cmd.format(v)
             self.handle.write(cmd)
         except ValueError as e:
-            print 'bad voltage in VoltageLimit'
+            print 'bad voltage in voltageLimit'
+
+
+            
+    def SetSMURange(self, limit):
+        cmd = 'smu.source.range = {0}'
+        try:
+            r = float(limit)
+            cmd = cmd.format(r)
+            self.handle.write(cmd)
+        except ValueError as e:
+            print 'bad limit given '
 
     def SetRepeatAverage(self,samples):
         if samples<=1:
@@ -584,6 +599,16 @@ class Keithley2450(Sourcemeter):
     def Model(self):
         identity = self.handle.ask("*IDN?")
         return identity
+
+    def SetCurrent(self, i):
+        cmd = 'smu.source.level = {0}'
+        try:
+            current = float(i)
+            cmd = cmd.format(current)
+            self.handle.write(cmd)
+        except ValueError as e:
+            print 'bad current in Set Current'
+
 
     def SetVoltage(self, v):
         cmd = 'smu.source.level = {0}'

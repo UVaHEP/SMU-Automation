@@ -225,12 +225,15 @@ if luaScript:
                 elif not v:
                     try:
                         s.handle.clear()
+                        print 'Past Clear'
                         s.handle.write(cmdv)
                         time.sleep(0.1)
                         lastMeasure = s.handle.read()
                         v = lastMeasure.strip().split(',')
+                        print 'v:{0}'.format(v)
                     except Exception as e:
                         print 'Failed v. read {0} of 3'.format(x)
+                        print 'Exception: {0}'.format(e)
                         v = None
                 if i is not None and v is not None:
                     break
