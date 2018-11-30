@@ -51,7 +51,7 @@ if mode.find('DC_VOLTAGE') == -1:
     #Not in DC_Voltage Mode
     print 'Switching to Voltage mode'
     s.DisableOutput()
-    s.handle.write('smu.measure.func = smu.FUNC_DC_CURRENT')
+    s.Handle.write('smu.measure.func = smu.FUNC_DC_CURRENT')
     s.OutputFn('voltage')
     mode = s.OutputFn()
     print 'Now in mode {0}'.format(mode)
@@ -60,7 +60,7 @@ if mode.find('DC_VOLTAGE') == -1:
 
     
 #s.Reset()
-s.handle.write('trigger.model.abort()')
+s.Handle.write('trigger.model.abort()')
 s.SetCurrentLimit(args.current_limit)
 s.Autorange(True)
 if args.voltage == 0:
@@ -78,8 +78,8 @@ try:
     #s.handle.write('smu.measure.range = 100e-6')
     s.ReadVIPoint(voltage)
     if args.continuous:
-        s.handle.write('trigger.model.load("SimpleLoop", 500)')
-        s.handle.write('trigger.model.initiate()')
+        s.Handle.write('trigger.model.load("SimpleLoop", 500)')
+        s.Handle.write('trigger.model.initiate()')
         
 except:
     print "Error reading returned current msg",current

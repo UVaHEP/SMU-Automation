@@ -59,7 +59,7 @@ try:
         #disable the output and switch modes
         print 'Switching to Current mode'
         s.DisableOutput()
-        s.handle.write('smu.measure.func = smu.FUNC_DC_VOLTAGE')
+        s.Handle.write('smu.measure.func = smu.FUNC_DC_VOLTAGE')
         s.OutputFn('current')
         
         mode = s.OutputFn()
@@ -78,7 +78,7 @@ except Exception as e:
         print '{0}'.format(e)
 finally:
     pass
-    #Kill the connection 
+    #Kill the connection, not necessary as it's done in the sourcemeter class
 #    s = None
     
         

@@ -112,13 +112,13 @@ tstamp=now.strftime("%Y%m%d-%H%M")
 if luaScript:
 
     print 'Uploading script from: {0}'.format(settings['script'])
-    s.handle.write('script.delete("{0}")'.format('IVRunnerScript'))
+    s.Handle.write('script.delete("{0}")'.format('IVRunnerScript'))
     if settings['model'].find('k2611a') != -1:
         ## Small delay to avoid queue full error
-        s.uploadScript('IVRunnerScript', luaScript, 0.01)
+        s.UploadScript('IVRunnerScript', luaScript, 0.01)
     else:
-        s.uploadScript('IVRunnerScript', luaScript)
-    s.handle.write('IVRunnerScript.run()')
+        s.UploadScript('IVRunnerScript', luaScript)
+    s.Handle.write('IVRunnerScript.run()')
     time.sleep(0.25)
 
     s.SetSourceDelay(settings['sourcedelay'])
@@ -154,7 +154,7 @@ if luaScript:
             print '+++++++++++++++++++++++++++++++++++++'
             print 'Running voltage steps for pin #{0}'.format(channel)
 
-            s.handle.write(lstBuilderCmd)
+            s.Handle.write(lstBuilderCmd)
 
             for i in range (1, len(vSteps)+1):                
                 step = vSteps[i-1]
@@ -171,37 +171,37 @@ if luaScript:
                     cmd = "vList[{0}] = {1}"
                     #print(cmd.format(i, step.level, step.value))
 
-                s.handle.write(cmd.format(i, step.level, step.value))
+                s.Handle.write(cmd.format(i, step.level, step.value))
                 if settings['model'].find('2611a') != -1:
                     #Small delay to avoid queue full
                     time.sleep(0.05)
 
             cmd = 'IVRunnerList({0}, {1})'.format('vList', settings['currentLimit'])
-            s.handle.write(cmd)
+            s.Handle.write(cmd)
         else:
             print "++++++++++++++++++++++++++++++++++++++++"
             print "Doing I-V scan for pin #{0}, start: {1}, end: {2}, step: {3}".format(channel,start , end, step)
             cmd = 'IVRunner({0}, {1}, {2})'.format(start, end, step)
-            s.handle.write(cmd)
+            s.Handle.write(cmd)
 
         time.sleep(0.25)
-        s.handle.timeout = 2.5
-        l = s.handle.read()
+        s.Handle.timeout = 2.5
+        l = s.Handle.read()
         while l.find('Done') == -1:
             try:
                 print l
-                l = s.handle.read()
+                l = s.Handle.read()
             except vxi11.vxi11.Vxi11Exception as e:
                 print 'exception {0}'.format(e)
                 break
 
         s.DisableOutput()
-        s.handle.clear()
+        s.Handle.clear()
         time.sleep(0.25)
         i = None
         v = None
         try:
-            s.handle.timeout = 2.5
+            s.Handle.timeout = 2.5
             cmdi = 'printbuffer(1,ivBuffer.n,ivBuffer.readings)'
             cmdv = 'printbuffer(1,ivBuffer.n,ivBuffer.sourcevalues)'
             #cmdi = 'printbuffer(1,defbuffer1.n,defbuffer1.readings)'
@@ -214,21 +214,21 @@ if luaScript:
                 
                 if not i:
                     try:
-                        s.handle.clear()
-                        s.handle.write(cmdi)
+                        s.Handle.clear()
+                        s.Handle.write(cmdi)
                         time.sleep(0.1)
-                        lastMeasure = s.handle.read()
+                        lastMeasure = s.Handle.read()
                         i = lastMeasure.strip().split(',')
                     except Exception as e:
                         print 'Failed read {0} of 3'.format(x)
                         i = None
                 elif not v:
                     try:
-                        s.handle.clear()
+                        s.Handle.clear()
                         print 'Past Clear'
-                        s.handle.write(cmdv)
+                        s.Handle.write(cmdv)
                         time.sleep(0.1)
-                        lastMeasure = s.handle.read()
+                        lastMeasure = s.Handle.read()
                         v = lastMeasure.strip().split(',')
                         print 'v:{0}'.format(v)
                     except Exception as e:
@@ -268,7 +268,7 @@ if luaScript:
         print('Time Elapsed: min: {0}, seconds: {1}'.format(mins, secs))
 
     print 'Finished Running Curves!'
-    s.handle.write('logout')
+    s.Handle.write('logout')
     exit()
 
 
