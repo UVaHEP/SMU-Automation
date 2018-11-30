@@ -453,14 +453,20 @@ class Keithley2450(Sourcemeter):
         self.Config()
 
     def Config(self):
+        ### This will get removed, and the options moved around. Wrong place for this
+
         self.SetRepeatAverage(3)  # Average 3 samples / measurement
         self.SetSourceDelay(1.0)  # hold off time before measurements
         self.SetVoltageLimit(-80) # need to improve for Fwd protection
         self.SetCurrentLimit(self.Ilimit)
         self.Autorange(1)
 
-    def UseRearTerm(self):
-        self.Handle.write('smu.measure.terminals=smu.TERMINALS_REAR')
+    def SetTerminal(self, terminal):
+
+        if terminal == 'front':
+            self.Handle.write('smu.measure.terminals=smu.TERMINALS_FRONT')
+        elif terminal == 'rear':
+            self.Handle.write('smu.measure.terminals=smu.TERMINALS_REAR')
 
         
     def __del__(self):
@@ -589,11 +595,6 @@ class Keithley2450(Sourcemeter):
         except ValueError as e:
             print 'bad voltage in Set Voltage'
         
-
-    #def ReadUntilStable(self,v=0):
-    #    self.SetVoltage(v)
-    #    self.Handle.write('smu.measure.count = 1')
-
     def ReadVIPointTest(self,v=None):
         if v != None:
             self.SetVoltage(v) # otherwise use last set voltage

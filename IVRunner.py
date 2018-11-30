@@ -66,7 +66,7 @@ else:
 print 'Resetting'
 s.Reset()
 
-if args.BackTerm: s.UseRearTerm()
+if args.BackTerm: s.SetTerminal('rear')
 
 #s.Config() # not needed, done by Reset()
 if args.limit>0: s.SetCurrentLimit(args.limit)
@@ -92,7 +92,7 @@ if settings['channelMap']:
     ft232Controller.pinMap = pinMaps[settings['channelMap']]
     
 if settings['backterm']:
-    s.UseRearTerm()
+    s.SetTerminal('rear')
 
 vSteps = None
 if settings['voltageSteps']:
