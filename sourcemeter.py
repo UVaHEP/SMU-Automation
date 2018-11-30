@@ -238,15 +238,6 @@ class Keithley2611(Sourcemeter):
         self.OutputFn('voltage')       
 
         
-    def ClearBuffer(self):
-        return
-        self.Handle.write('print(1234567890)') 
-        try:
-	    junk = self.Handle.read() # make sure buffer is clear
-            while(junk.find('123456789') == -1):
-                junk = self.Handle.read()
-        except vxi11.vxi11.Vxi11Exception as e:
-            print 'timed out waiting for clear buffer? {0}'.format(e)
 
     def Beep(self, notes):
         #Beep takes a list of tuples where each tuple consists of
@@ -328,6 +319,8 @@ class Keithley2611(Sourcemeter):
         self.Handle.write('smua.measure.nplc = {0}'.format(nplc))
             
     def Model(self):
+        #First clean anything in the buffer out
+        self.Handle.clear()
         identity = self.Handle.ask("*IDN?")
         return identity
 
@@ -364,7 +357,6 @@ class Keithley2611(Sourcemeter):
             time.sleep(1)
         print ""
         self.DisableOutput()
-        self.ClearBuffer()
 
   
     def MeasureIV(self):
@@ -396,7 +388,6 @@ class Keithley2611(Sourcemeter):
 	        print 'timeout? {0}'.format(e)
                 continue
 
-        self.ClearBuffer()
         
         self.Handle.write('printbuffer(1,smua.nvbuffer1.n,smua.nvbuffer1.readings)')
         lastMeasure = self.Handle.read()
@@ -458,7 +449,6 @@ class Keithley2450(Sourcemeter):
         self.Handle=vxi11.Instrument(self.Host)
         self.Connected = False
         self.ModelName = None
-        self.ClearBuffer()
         self.Connect()
         self.Config()
 
@@ -474,7 +464,6 @@ class Keithley2450(Sourcemeter):
 
         
     def __del__(self):
-        #self.Handle.write('*RST')
         self.Handle.close()
         print "Closing TCP connection"
  
@@ -488,19 +477,6 @@ class Keithley2450(Sourcemeter):
             print 'Wrong Model %s' % identity
             self.Handle.close()
             return            
-        #self.Reset()
-        #self.DisableOutput()
-        #self.OutputFn('voltage')	
-
-    def ClearBuffer(self):
-        return
-        self.Handle.write('print(1234567890)') 
-        try:
-	    junk = self.Handle.read()               # make sure buffer is clear
-            while(junk.find('123456789') == -1):
-                junk = self.Handle.read()
-        except vxi11.vxi11.Vxi11Exception as e:
-            print 'timed out waiting for clear buffer? {0}'.format(e)
 
         
     def Beep(self, notes):
@@ -589,6 +565,8 @@ class Keithley2450(Sourcemeter):
         self.Handle.write('smu.measure.nplc = {0}'.format(nplc))
         
     def Model(self):
+        #First clean anything in the buffer out
+        self.Handle.clear()
         identity = self.Handle.ask("*IDN?")
         return identity
 
@@ -647,7 +625,6 @@ class Keithley2450(Sourcemeter):
         self.Handle.write('smu.measure.count = 1')
         self.EnableOutput()
         self.Handle.write('print(smu.measure.read())')
-        self.ClearBuffer()
         measure = self.Handle.read()
         #print 'i-v measure: {0}'.format(measure)
         #self.DisableOutput()
@@ -699,7 +676,6 @@ class Keithley2450(Sourcemeter):
             time.sleep(1)
         print ""
         self.DisableOutput()
-        self.ClearBuffer()
         
 
     def MeasureIV(self):
@@ -734,7 +710,6 @@ class Keithley2450(Sourcemeter):
 	        print 'timeout? {0}'.format(e)
                 continue
 
-        self.ClearBuffer()
         self.Handle.write('printbuffer(1,defbuffer1.n,defbuffer1.readings)')
         lastMeasure = self.Handle.read()
         self.Current = lastMeasure.strip().split(',')
